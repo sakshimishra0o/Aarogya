@@ -1,6 +1,6 @@
-# 🏥 AarogyaCloud
+﻿# 🏥 Aarogya
 
-**AarogyaCloud** is a real-time medical consultation platform that connects patients with doctors instantly — securely, reliably, and from anywhere.
+**Aarogya** is a real-time medical consultation platform that connects patients with doctors instantly — securely, reliably, and from anywhere.
 
 ---
 
@@ -30,7 +30,7 @@
 ## 📁 Project Structure
 
 ```
-AarogyaCloud/
+Aarogya/
 ├── index.html          # Landing page (Portal selector)
 ├── patient.html        # Patient portal
 ├── doctor.html         # Doctor portal
@@ -97,4 +97,4 @@ Pull requests are welcome! For major changes, please open an issue first.
 
 ## 📄 License
 
-MIT © 2026 AarogyaCloud
+MIT © 2026 Aarogya
