@@ -167,6 +167,13 @@
             ✅ Verify Existing Login
         </button>
 
+        <!-- Domain Warning -->
+        <div id="domain-warning" class="hidden" style="margin-top: 1.5rem; padding: 1rem; background: #fff1f2; border: 1px solid #fda4af; border-radius: 12px; font-size: 0.85rem; color: #9f1239;">
+            <strong>⚠️ Domain Restriction Detected!</strong><br>
+            Authentication might fail because <code><span id="current-domain"></span></code> is not in your Firebase "Authorized Domains".
+            <br><a href="https://console.firebase.google.com/project/_/authentication/settings" target="_blank" style="color:#ef4444; font-weight:bold;">Click here to fix this in Firebase Console</a>
+        </div>
+
         <div id="log">
             <div class="log-entry">Waiting for action...</div>
         </div>
@@ -203,6 +210,13 @@
 
         const logEl = document.getElementById('log');
         
+        // Domain Check logic
+        const currentDomain = window.location.hostname || "local-file";
+        document.getElementById('current-domain').innerText = currentDomain;
+        if (currentDomain !== 'localhost' && currentDomain !== 'aarogya-281e3.firebaseapp.com') {
+            document.getElementById('domain-warning').classList.remove('hidden');
+        }
+
         window.copyCreds = () => {
             const email = document.getElementById('copy-email').innerText;
             const pass = document.getElementById('copy-pass').innerText;
