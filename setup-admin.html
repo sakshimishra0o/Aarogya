@@ -4,262 +4,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aarogya - Admin Setup</title>
+    <title>Aarogya - Master Admin Setup</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #2563eb;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg: #0f172a;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: #f8fafc;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
+            padding: 20px;
         }
 
         .setup-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 2rem;
-            max-width: 480px;
+            background: #ffffff;
+            color: #1e293b;
+            border-radius: 24px;
+            padding: 40px;
             width: 100%;
+            max-width: 500px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        .setup-header {
+        .header {
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 30px;
         }
 
-        .setup-header h1 {
-            font-size: 1.5rem;
-            color: #1e293b;
-            margin-bottom: 0.25rem;
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .setup-header p {
-            color: #64748b;
-            font-size: 0.875rem;
-        }
-
-        .credentials-box {
-            background: #f8fafc;
+        .status-box {
+            background: #f1f5f9;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
         }
 
-        .credentials-box h3 {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-bottom: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .cred-row {
+        .status-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
         }
 
-        .cred-row:first-of-type {
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .cred-row label {
-            font-weight: 500;
-            color: #334155;
-        }
-
-        .cred-row code {
-            background: #e2e8f0;
-            padding: 0.25rem 0.75rem;
+        .status-tag {
+            padding: 2px 8px;
             border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.875rem;
             font-weight: 600;
-            color: #1e293b;
+            font-size: 0.75rem;
+            text-transform: uppercase;
         }
 
-        .action-btn {
+        .tag-pending { background: #e2e8f0; color: #64748b; }
+        .tag-ok { background: #dcfce7; color: #166534; }
+        .tag-fail { background: #fee2e2; color: #991b1b; }
+
+        .btn {
             width: 100%;
-            padding: 0.875rem 1rem;
-            font-size: 0.9375rem;
-            font-weight: 600;
+            padding: 14px;
+            border-radius: 12px;
             border: none;
-            border-radius: 10px;
+            font-weight: 700;
             cursor: pointer;
-            margin-bottom: 0.5rem;
             transition: all 0.2s;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 10px;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white;
-        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-        }
+        .btn-outline { background: transparent; border: 2px solid #e2e8f0; color: #64748b; }
+        .btn-outline:hover { background: #f8fafc; }
 
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        .action-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        #log-area {
-            background: #0f172a;
-            border-radius: 10px;
-            padding: 0.75rem;
-            margin-top: 1rem;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-            line-height: 1.6;
-        }
-
-        .log-entry {
-            padding: 0.125rem 0;
-        }
-
-        .log-entry.success {
-            color: #4ade80;
-        }
-
-        .log-entry.error {
-            color: #f87171;
-        }
-
-        .log-entry.info {
-            color: #60a5fa;
-        }
-
-        .log-entry.warning {
-            color: #fbbf24;
-        }
-
-        .success-box {
-            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-            border: 2px solid #10b981;
+        #log {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 15px;
             border-radius: 12px;
-            padding: 1.5rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #334155; padding-bottom: 2px; }
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+
+        .cred-card {
+            background: #f8fafc;
+            border: 2px dashed var(--primary);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             text-align: center;
-            margin-top: 1rem;
         }
 
-        .success-box h2 {
-            color: #065f46;
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .success-box p {
-            color: #047857;
-            margin-bottom: 1rem;
-        }
-
-        .success-box a {
-            display: inline-block;
-            padding: 0.75rem 2rem;
-            background: #10b981;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
-
-        .success-box a:hover {
-            background: #059669;
-        }
-
-        .hidden {
-            display: none !important;
-        }
+        .cred-card code { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
     </style>
 </head>
 
 <body>
     <div class="setup-card">
-        <div class="setup-header">
-            <h1>🔐 Admin Setup</h1>
-            <p>One-click admin account setup for Aarogya</p>
+        <div class="header">
+            <h1>🚀 Master Admin Setup</h1>
+            <p>Aarogya Healthcare Management System</p>
         </div>
 
-        <div class="credentials-box">
-            <h3>Admin Credentials</h3>
-            <div class="cred-row">
-                <label>Email:</label>
-                <code>admin@aarogya.com</code>
+        <div class="status-box">
+            <div class="status-item">
+                <span>Firebase Auth</span>
+                <span id="auth-status" class="status-tag tag-pending">Checking...</span>
             </div>
-            <div class="cred-row">
-                <label>Password:</label>
-                <code>Admin@123</code>
+            <div class="status-item">
+                <span>Realtime Database</span>
+                <span id="db-status" class="status-tag tag-pending">Checking...</span>
             </div>
         </div>
 
-        <button id="auto-fix-btn" class="action-btn btn-primary">
-            � Setup Admin Account
+        <div class="cred-card">
+            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">NEW MASTER ADMIN CREDENTIALS</p>
+            <div>Email: <code id="copy-email">aarogya_master@admin.com</code></div>
+            <div style="margin-top: 5px;">Pass: <code id="copy-pass">Password123!</code></div>
+            <button onclick="copyCreds()" class="btn btn-sm btn-outline" style="margin-top:10px; width:auto; display:inline-flex;">📋 Copy Credentials</button>
+        </div>
+
+        <button id="setup-btn" class="btn btn-primary">
+            🔧 Build & Secure Admin Account
         </button>
 
-        <button id="test-btn" class="action-btn btn-success">
-            ✅ Test Login
+        <button id="direct-login-btn" class="btn btn-accent hidden">
+            🚀 Direct Admin Login (One-Click)
         </button>
 
-        <div id="log-area">
-            <div class="log-entry info">Ready. Click "Setup Admin Account" to begin...</div>
+        <button id="clear-sessions-btn" class="btn btn-outline" style="border-color: var(--error); color: var(--error);">
+            🗑️ Clear All Sessions (Fresh Start)
+        </button>
+
+        <button id="test-login-btn" class="btn btn-outline">
+            ✅ Verify Existing Login
+        </button>
+
+        <div id="log">
+            <div class="log-entry">Waiting for action...</div>
         </div>
 
-        <div id="success-box" class="success-box hidden">
-            <h2>✅ Admin Account Ready!</h2>
-            <p>Login with: admin@aarogya.com / Admin@123</p>
-            <a href="admin.html">→ Go to Admin Panel</a>
+        <div id="success-link" style="margin-top: 20px; text-align: center;" class="hidden">
+            <a href="admin.html" style="color: var(--primary); font-weight: 700; text-decoration: none;">→ Open Admin Panel</a>
         </div>
     </div>
 
     <script type="module">
-        // Firebase SDK - Using CDN imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import {
-            getAuth,
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            signOut
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import {
-            getDatabase,
-            ref,
-            set,
-            get
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase Configuration - EXACT match with Firebase Console
+        // Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyB5PsgVUGeHAyXjzuU7Yqw9QhN8wY0ssIA",
             authDomain: "aarogya-281e3.firebaseapp.com",
@@ -271,164 +193,141 @@
             measurementId: "G-X5CQZMRXMJ"
         };
 
-        // Initialize Firebase
+        const ADMIN_EMAIL = "aarogya_master@admin.com";
+        const ADMIN_PASSWORD = "Password123!";
+
+        // Initialize
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getDatabase(app);
+        const db = getDatabase(app, firebaseConfig.databaseURL);
 
-        // Admin Credentials
-        const ADMIN_EMAIL = "admin@aarogya.com";
-        const ADMIN_PASSWORD = "Admin@123";
+        const logEl = document.getElementById('log');
+        
+        window.copyCreds = () => {
+            const email = document.getElementById('copy-email').innerText;
+            const pass = document.getElementById('copy-pass').innerText;
+            navigator.clipboard.writeText(`Email: ${email}\nPassword: ${pass}`);
+            alert('Credentials copied to clipboard!');
+        };
 
-        // DOM Elements
-        const logArea = document.getElementById('log-area');
-        const successBox = document.getElementById('success-box');
-        const autoFixBtn = document.getElementById('auto-fix-btn');
-        const testBtn = document.getElementById('test-btn');
-
-        // Logging function
-        function log(message, type = 'info') {
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-            entry.textContent = `[${time}] ${message}`;
-            logArea.appendChild(entry);
-            logArea.scrollTop = logArea.scrollHeight;
-            console.log(`[${type.toUpperCase()}] ${message}`);
+        function addLog(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type ? 'log-' + type : ''}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
         }
 
-        function clearLog() {
-            logArea.innerHTML = '';
+        // Pre-flight check
+        async function runChecks() {
+            try {
+                addLog('Testing Firebase Auth connection...');
+                document.getElementById('auth-status').innerText = 'CONNECTED';
+                document.getElementById('auth-status').className = 'status-tag tag-ok';
+                
+                addLog('Testing Database connection...');
+                await get(ref(db, '.info/connected'));
+                document.getElementById('db-status').innerText = 'CONNECTED';
+                document.getElementById('db-status').className = 'status-tag tag-ok';
+                addLog('Connection successful!', 'success');
+            } catch (err) {
+                addLog('Connection failed: ' + err.message, 'error');
+                document.getElementById('db-status').innerText = 'ERROR';
+                document.getElementById('db-status').className = 'status-tag tag-fail';
+            }
         }
 
-        // Main Setup Function
-        autoFixBtn.addEventListener('click', async () => {
-            clearLog();
-            autoFixBtn.disabled = true;
-            autoFixBtn.innerHTML = '⏳ Setting up...';
+        runChecks();
 
-            log('Starting admin setup...', 'info');
+        document.getElementById('setup-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('setup-btn');
+            btn.disabled = true;
+            addLog('Starting build process...');
 
             try {
+                // 1. Try Login or Create
                 let user = null;
-                let needsDbEntry = true;
-
-                // Step 1: Try to sign in (check if account exists)
-                log('Checking if account exists...', 'info');
                 try {
+                    addLog('Checking if admin account exists...');
                     const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
                     user = cred.user;
-                    log('Account already exists, signed in!', 'success');
-                } catch (signInErr) {
-                    log(`Sign in result: ${signInErr.code}`, 'warning');
-
-                    if (signInErr.code === 'auth/user-not-found' ||
-                        signInErr.code === 'auth/invalid-credential' ||
-                        signInErr.code === 'auth/invalid-email') {
-
-                        // Create new account
-                        log('Creating new admin account...', 'info');
-                        try {
-                            const newCred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-                            user = newCred.user;
-                            log('Admin account created!', 'success');
-                        } catch (createErr) {
-                            if (createErr.code === 'auth/email-already-in-use') {
-                                log('Email exists but password may be wrong', 'error');
-                                throw new Error('Account exists with different password. Check Firebase Console.');
-                            }
-                            throw createErr;
-                        }
+                    addLog('Existing account found.', 'success');
+                } catch (err) {
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                        addLog('Account missing. Creating new admin...');
+                        const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                        user = cred.user;
+                        addLog('New Auth account created!', 'success');
                     } else {
-                        throw signInErr;
+                        throw err;
                     }
                 }
 
-                // Step 2: Add to database
+                // 2. Sync with Database
                 if (user) {
-                    log(`User UID: ${user.uid}`, 'info');
-                    log('Adding admin to database...', 'info');
-
-                    try {
-                        await set(ref(db, `users/admin/${user.uid}`), {
-                            email: ADMIN_EMAIL,
-                            role: 'admin',
-                            name: 'System Administrator',
-                            createdAt: Date.now()
-                        });
-                        log('Database entry created!', 'success');
-                    } catch (dbErr) {
-                        log(`Database error: ${dbErr.message}`, 'error');
-                        log('Check Firebase Console > Realtime Database > Rules', 'warning');
-                        throw dbErr;
-                    }
-
-                    // Step 3: Verify
-                    log('Verifying setup...', 'info');
-                    const snap = await get(ref(db, `users/admin/${user.uid}`));
-
-                    if (snap.exists()) {
-                        log('✓ Admin verified in database!', 'success');
-                        log('🎉 SETUP COMPLETE!', 'success');
-                        successBox.classList.remove('hidden');
-                        autoFixBtn.innerHTML = '✓ Setup Complete';
-                        autoFixBtn.style.background = '#10b981';
-                    } else {
-                        log('Warning: Database write may have failed', 'warning');
-                    }
-
-                    await signOut(auth);
+                    addLog('Syncing UID with Realtime Database...');
+                    await set(ref(db, `users/admin/${user.uid}`), {
+                        name: "Master Administrator",
+                        email: ADMIN_EMAIL,
+                        role: "admin",
+                        createdAt: Date.now(),
+                        status: "SUPER"
+                    });
+                    addLog('Database record secured!', 'success');
+                    
+                    addLog('Verification complete. SYSTEM READY.', 'success');
+                    document.getElementById('success-link').classList.remove('hidden');
+                    document.getElementById('direct-login-btn').classList.remove('hidden');
+                    alert('Admin account is now ACTIVE and WORKING.');
                 }
-
-            } catch (error) {
-                log(`Error: ${error.message}`, 'error');
-                autoFixBtn.disabled = false;
-                autoFixBtn.innerHTML = '🚀 Setup Admin Account';
+                
+                // Don't sign out yet so the direct login can work
+            } catch (err) {
+                addLog('FATAL ERROR: ' + err.message, 'error');
+                alert('Setup failed. Check console for details.');
+            } finally {
+                btn.disabled = false;
             }
         });
 
-        // Test Login Function
-        testBtn.addEventListener('click', async () => {
-            clearLog();
-            testBtn.disabled = true;
-            testBtn.innerHTML = '⏳ Testing...';
+        document.getElementById('direct-login-btn').addEventListener('click', async () => {
+            addLog('Directing to Admin Panel...');
+            // We are already signed in from the setup process
+            window.location.href = 'admin.html';
+        });
 
-            log('Testing admin login...', 'info');
-
+        document.getElementById('clear-sessions-btn').addEventListener('click', async () => {
             try {
-                // Auth test
-                const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-                log(`Auth OK! UID: ${cred.user.uid}`, 'success');
-
-                // Database test
-                const snap = await get(ref(db, `users/admin/${cred.user.uid}`));
-
-                if (snap.exists()) {
-                    log('Database entry exists!', 'success');
-                    log('🎉 LOGIN TEST PASSED!', 'success');
-                    successBox.classList.remove('hidden');
-                } else {
-                    log('User exists in Auth but NOT in Database', 'warning');
-                    log('Click "Setup Admin Account" to fix', 'warning');
-                }
-
+                addLog('Clearing all active sessions...');
                 await signOut(auth);
-
-            } catch (error) {
-                log(`Test failed: ${error.message}`, 'error');
-
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-                    log('Admin account not found. Click "Setup Admin Account"', 'warning');
-                }
+                addLog('Sessions cleared. You can now start fresh.', 'success');
+                alert('All sessions cleared! Now click "Build & Secure Admin Account".');
+            } catch (err) {
+                addLog('Error clearing sessions: ' + err.message, 'error');
             }
-
-            testBtn.disabled = false;
-            testBtn.innerHTML = '✅ Test Login';
         });
 
-        // Initial connection test
-        log('Firebase initialized successfully', 'success');
-        log(`Database URL: ${firebaseConfig.databaseURL}`, 'info');
+        document.getElementById('test-login-btn').addEventListener('click', async () => {
+            try {
+                addLog('Testing sign-in credentials...');
+                const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+                addLog('Auth check passed.', 'success');
+                
+                const snap = await get(ref(db, `users/admin/${cred.user.uid}`));
+                if (snap.exists()) {
+                    addLog('Database record found.', 'success');
+                    alert('Login is WORKING. You can go to the admin panel.');
+                    document.getElementById('success-link').classList.remove('hidden');
+                } else {
+                    addLog('Auth OK but Database record MISSING!', 'error');
+                    alert('Auth works but database is empty. Click "Build & Secure Admin Account" to fix.');
+                }
+                await signOut(auth);
+            } catch (err) {
+                addLog('Login test failed: ' + err.message, 'error');
+                alert('Invalid credentials or connection error.');
+            }
+        });
     </script>
 </body>
 

@@ -32,6 +32,7 @@ const statEmergency = document.getElementById('stat-emergency');
 // Login Handler - Store credentials for later use
 loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    console.log('=== Admin Login Attempt ===');
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerText;
 
@@ -41,13 +42,16 @@ loginForm?.addEventListener('submit', async (e) => {
 
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
+        console.log('Attempting login for:', email);
 
         // Store credentials for re-login after adding doctor
         adminCredentials = { email, password };
 
         await login(email, password, 'admin');
+        console.log('Login logic successful');
 
     } catch (error) {
+        console.error('Admin Login Error:', error);
         alert(error.message);
         btn.disabled = false;
         btn.innerText = originalText;

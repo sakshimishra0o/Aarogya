@@ -2,7 +2,7 @@
 import { db, auth, storage } from './firebase.js';
 import { checkAuth, login, logout, registerPatient } from './auth.js';
 import {
-    ref, set, onValue, update, get, push, remove
+    ref, set, onValue, update, get, push, remove, query, orderByChild, equalTo
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import {
     ref as sRef, uploadBytes, getDownloadURL, deleteObject
@@ -378,12 +378,19 @@ async function loadPatientHistory(patientId) {
     if (!patientId) return;
 
     try {
-        const sessionsSnap = await get(ref(db, 'sessions'));
+        console.log('Loading history for patient:', patientId);
+        const sessionsQuery = query(
+            ref(db, 'sessions'),
+            orderByChild('patientId'),
+            equalTo(patientId)
+        );
+
+        const sessionsSnap = await get(sessionsQuery);
         const allSessions = sessionsSnap.val() || {};
 
         // 1. Check for Active Session
         const activeEntry = Object.entries(allSessions).find(([sid, s]) =>
-            s.patientId === patientId && s.status === 'ACTIVE' && !s.endTime
+            s.status === 'ACTIVE' && !s.endTime
         );
 
         if (activeEntry) {

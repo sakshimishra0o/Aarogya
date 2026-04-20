@@ -1,33 +1,38 @@
 :root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --primary-light: #dbeafe;
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --primary-light: #eef2ff;
     --accent: #10b981;
-    --accent-light: #d1fae5;
-    --danger: #ef4444;
-    --danger-light: #fee2e2;
+    --accent-dark: #059669;
+    --accent-light: #ecfdf5;
+    --danger: #f43f5e;
+    --danger-light: #fff1f2;
     --warning: #f59e0b;
-    --warning-light: #fef3c7;
-    --bg-light: #f8fafc;
-    --text-main: #1e293b;
+    --warning-light: #fffbeb;
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #0f172a;
     --text-muted: #64748b;
     --white: #ffffff;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --glass: rgba(255, 255, 255, 0.8);
     --radius: 12px;
-    --radius-lg: 16px;
+    --radius-lg: 20px;
+    --font-main: 'Outfit', 'Inter', sans-serif;
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', sans-serif;
 }
 
 body {
-    background-color: var(--bg-light);
+    background-color: var(--bg-main);
     color: var(--text-main);
+    font-family: var(--font-main);
     line-height: 1.6;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
@@ -46,60 +51,62 @@ body {
 
 /* Auth Page - Centered Layout */
 .panel-container.auth-page {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
+    background: radial-gradient(circle at top right, #eef2ff, #f8fafc);
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
     gap: 1.5rem;
-    flex-wrap: wrap;
-    align-content: center;
 }
 
 .auth-brand {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .logo {
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    border-radius: 12px;
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 1.75rem;
+    font-weight: 700;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
 }
 
 .brand-name {
-    font-size: 1.75rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--text-main), var(--primary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
 .panel-header {
-    background: var(--white);
-    padding: 1rem;
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    padding: 1.25rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
     position: sticky;
     top: 0;
     z-index: 100;
-    gap: 0.75rem;
 }
 
 .content {
-    padding: 1rem;
+    padding: 2rem;
     flex-grow: 1;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
 }

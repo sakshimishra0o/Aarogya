@@ -12,24 +12,23 @@ import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
  * Get user role from database
  */
 async function getUserRole(uid) {
-    try {
-        // Check admin first
-        const adminSnap = await get(ref(db, `users/admin/${uid}`));
-        if (adminSnap.exists()) return { role: 'admin', data: adminSnap.val() };
+    // Check admin
+    console.log(`Checking role for UID: ${uid} at users/admin...`);
+    const adminSnap = await get(ref(db, `users/admin/${uid}`));
+    if (adminSnap.exists()) return { role: 'admin', data: adminSnap.val() };
 
-        // Check doctor
-        const doctorSnap = await get(ref(db, `users/doctors/${uid}`));
-        if (doctorSnap.exists()) return { role: 'doctor', data: doctorSnap.val() };
+    // Check doctor
+    console.log(`Checking role for UID: ${uid} at users/doctors...`);
+    const doctorSnap = await get(ref(db, `users/doctors/${uid}`));
+    if (doctorSnap.exists()) return { role: 'doctor', data: doctorSnap.val() };
 
-        // Check patient
-        const patientSnap = await get(ref(db, `users/patients/${uid}`));
-        if (patientSnap.exists()) return { role: 'patient', data: patientSnap.val() };
+    // Check patient
+    console.log(`Checking role for UID: ${uid} at users/patients...`);
+    const patientSnap = await get(ref(db, `users/patients/${uid}`));
+    if (patientSnap.exists()) return { role: 'patient', data: patientSnap.val() };
 
-        return { role: null, data: null };
-    } catch (error) {
-        console.error('Error getting user role:', error);
-        return { role: null, data: null };
-    }
+    console.warn(`No role found in database for UID: ${uid}`);
+    return { role: null, data: null };
 }
 
 /**
@@ -107,18 +106,34 @@ export function checkAuth(requiredRole) {
  * Login function - validates role before allowing access
  */
 export async function login(email, password, requiredRole) {
+    console.log(`Attempting login for ${email} with role ${requiredRole}...`);
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+        console.log('Auth success, fetching user role for UID:', user.uid);
 
         // Verify role
-        const { role, data } = await getUserRole(user.uid);
+        let roleInfo = null;
+        try {
+            roleInfo = await getUserRole(user.uid);
+        } catch (dbErr) {
+            console.error('Database connection error during login:', dbErr);
+            throw new Error(`Database Error: ${dbErr.message}. Please check your Firebase rules and connection.`);
+        }
+
+        const { role, data } = roleInfo;
+        console.log('Detected role:', role);
 
         if (!role) {
-            throw new Error('Account not found in database. Please contact admin or register.');
+            console.warn('User authenticated but no role found in database.');
+            if (email === 'aarogya_master@admin.com' || email.includes('admin')) {
+                throw new Error(`Admin Auth OK, but Database record is MISSING. Please run setup-admin.html to fix your account sync.`);
+            }
+            throw new Error(`Account found in Auth but role is missing in Database (UID: ${user.uid}). Please register again or contact support.`);
         }
 
         if (role !== requiredRole) {
+            console.warn(`Role mismatch: Expected ${requiredRole}, got ${role}`);
             throw new Error(`This is the ${requiredRole} portal. You are registered as ${role}. Please use the correct portal.`);
         }
 
@@ -130,17 +145,14 @@ export async function login(email, password, requiredRole) {
             throw new Error('Your account is pending admin approval. Please wait.');
         }
 
-        console.log('Login successful:', user.email, 'Role:', role);
+        console.log('Login successful:', user.email);
         return user;
 
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Login process error:', error);
 
         // Clean error messages
-        if (error.code === 'auth/user-not-found') {
-            throw new Error('No account found with this email.');
-        }
-        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
             throw new Error('Invalid email or password.');
         }
         if (error.code === 'auth/invalid-email') {
@@ -158,25 +170,30 @@ export async function login(email, password, requiredRole) {
  * Register new patient
  */
 export async function registerPatient(name, email, password, extraData = {}) {
+    console.log(`Registering new patient: ${email}`);
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+        console.log('Auth account created, UID:', user.uid);
 
         // Save to database
-        await set(ref(db, `users/patients/${user.uid}`), {
+        const patientData = {
             name,
             email,
             role: 'patient',
             blocked: false,
             createdAt: Date.now(),
             ...extraData
-        });
+        };
 
-        console.log('Patient registered:', user.email);
+        console.log('Saving patient data to database...');
+        await set(ref(db, `users/patients/${user.uid}`), patientData);
+        console.log('Database entry created successfully');
+
         return user;
 
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('Registration process error:', error);
 
         if (error.code === 'auth/email-already-in-use') {
             throw new Error('Email already registered. Please login instead.');

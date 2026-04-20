@@ -2,7 +2,7 @@
 import { db, auth, storage } from './firebase.js';
 import { checkAuth, login, logout } from './auth.js';
 import {
-    ref, set, push, onValue, update, get, onDisconnect, off
+    ref, set, push, onValue, update, get, onDisconnect, off, query, orderByChild, equalTo
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import {
     uploadString, ref as sRef, getDownloadURL
@@ -477,12 +477,17 @@ async function loadConsultationHistory(doctorId) {
     console.log('Loading consultation history for:', doctorId);
 
     try {
-        const sessionsSnap = await get(ref(db, 'sessions'));
+        const sessionsQuery = query(
+            ref(db, 'sessions'),
+            orderByChild('doctorId'),
+            equalTo(doctorId)
+        );
+
+        const sessionsSnap = await get(sessionsQuery);
         const allSessions = sessionsSnap.val() || {};
 
-        // Filter sessions for this doctor
+        // All sessions for this doctor are already filtered by the query
         const doctorSessions = Object.entries(allSessions)
-            .filter(([sid, session]) => session.doctorId === doctorId)
             .sort((a, b) => (b[1].startTime || 0) - (a[1].startTime || 0))
             .slice(0, 10); // Last 10 sessions
 
@@ -633,10 +638,20 @@ async function loadPatientReportsForDoctor(patientId) {
             const updatedReports = snap.val() || {};
             const updatedArray = Object.entries(updatedReports);
 
-            if (updatedArray.length === reportsArray.length) return; // No change
+            if (updatedArray.length > reportsArray.length) {
+                // New report detected!
+                console.log('New report detected for patient:', patientId);
+                const newReport = updatedArray[updatedArray.length - 1][1];
+                alert(`🔔 New Medical Report Uploaded: ${newReport.description || 'Report'}`);
+            }
+
+            if (updatedArray.length === 0) {
+                reportsList.innerHTML = '<p class="text-muted" style="font-size:0.9rem;">No reports uploaded</p>';
+                return;
+            }
 
             reportsList.innerHTML = updatedArray.map(([id, report]) => `
-                <div class="report-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:0.5rem; background:#f8fafc;">
+                <div class="report-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:0.5rem; background:#f8fafc; border-left: 4px solid var(--primary);">
                     <div style="flex:1;">
                         <strong style="font-size:0.9rem;">${report.description || 'Report'}</strong>
                         <p style="font-size:0.75rem; color:#64748b; margin:0.25rem 0 0 0;">
