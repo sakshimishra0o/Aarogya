@@ -8,8 +8,8 @@ import {
     uploadString, ref as sRef, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Initialize Auth Check
-checkAuth('doctor');
+// Initialize Auth Check - MOVED TO BOTTOM TO PREVENT RACE CONDITION
+// checkAuth('doctor');
 
 let currentDoctor = null;
 let currentDoctorData = null;
@@ -252,10 +252,12 @@ async function monitorSessions(uid) {
                     hideConsultation();
                 }
             }
+        } else if (!data?.activeSessionId && currentSessionId) {
             console.log('Session ended');
             stopVideoCall();
             currentSessionId = null;
             hideConsultation();
+        }
     });
 }
 
@@ -785,4 +787,7 @@ async function loadPatientReportsForDoctor(patientId) {
         reportsList.innerHTML = '<p class="text-muted" style="font-size:0.9rem; color:#ef4444;">Failed to load reports</p>';
     }
 }
+
+// Start Auth Check
+checkAuth('doctor');
 

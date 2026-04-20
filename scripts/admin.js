@@ -10,8 +10,8 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Initialize Auth Check
-checkAuth('admin');
+// Initialize Auth Check - MOVED TO BOTTOM
+// checkAuth('admin');
 
 // Store admin credentials for re-login after creating doctor
 let adminCredentials = null;
@@ -389,3 +389,6 @@ window.addEventListener('auth-success', (e) => {
     console.log('Admin authenticated:', e.detail.email);
     initMonitoring();
 });
+
+// Start Auth Check
+checkAuth('admin');

@@ -8,8 +8,8 @@ import {
     ref as sRef, uploadBytes, getDownloadURL, deleteObject
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Initialize Auth Check
-checkAuth('patient');
+// Initialize Auth Check - MOVED TO BOTTOM
+// checkAuth('patient');
 
 let currentPatient = null;
 let currentSessionId = null;
@@ -860,3 +860,6 @@ uploadReportForm?.addEventListener('submit', async (e) => {
         btn.innerText = originalText;
     }
 });
+
+// Start Auth Check
+checkAuth('patient');
