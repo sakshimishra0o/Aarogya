@@ -14,10 +14,15 @@ checkAuth('doctor');
 let currentDoctor = null;
 let currentDoctorData = null;
 let currentSessionId = null;
-let heartbeatInterval = null;
-let sessionListener = null;
-let chatListener = null;
 let currentPatientId = null;
+let pc = null;
+let localStream = null;
+const servers = {
+    iceServers: [
+        { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
+    ],
+    iceCandidatePoolSize: 10,
+};
 
 // Views
 const views = {
@@ -247,11 +252,10 @@ async function monitorSessions(uid) {
                     hideConsultation();
                 }
             }
-        } else if (!data?.activeSessionId && currentSessionId) {
             console.log('Session ended');
+            stopVideoCall();
             currentSessionId = null;
             hideConsultation();
-        }
     });
 }
 
@@ -321,8 +325,18 @@ function showConsultation(sid) {
             if (tempEl) tempEl.innerText = hd.temp || '--';
             if (sugarEl) sugarEl.innerText = hd.sugar || '--';
             if (spo2El) spo2El.innerText = hd.spo2 || '--';
+
+            const updatedEl = document.getElementById('v-updated');
+            if (updatedEl && hd.updatedAt) {
+                updatedEl.innerText = `Last Updated: ${new Date(hd.updatedAt).toLocaleTimeString()}`;
+            }
         }
     });
+
+    // Initialize Video Call Answering
+    setTimeout(() => {
+        setupWebRTC(sid, 'doctor');
+    }, 1000);
 
     // Load Chat Messages
     const chatRef = ref(db, `sessions/${sid}/chat`);
@@ -341,6 +355,111 @@ function showConsultation(sid) {
 
         chatMessages.scrollTop = chatMessages.scrollHeight;
     });
+}
+
+// ==========================================
+/* ===== WebRTC SIGNALING LOGIC ===== */
+// ==========================================
+
+async function setupWebRTC(sid, role) {
+    console.log(`Setting up WebRTC for ${role} in session ${sid}`);
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+    const placeholder = document.getElementById('video-placeholder');
+
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (localVideo) localVideo.srcObject = localStream;
+
+        pc = new RTCPeerConnection(servers);
+
+        localStream.getTracks().forEach((track) => {
+            pc.addTrack(track, localStream);
+        });
+
+        pc.ontrack = (event) => {
+            console.log('Got remote track:', event.streams[0]);
+            if (remoteVideo) {
+                remoteVideo.srcObject = event.streams[0];
+                if (placeholder) placeholder.classList.add('hidden');
+            }
+        };
+
+        const sessionRef = ref(db, `sessions/${sid}/webrtc`);
+
+        // Doctor is the answerer
+        onValue(sessionRef, async (snapshot) => {
+            const data = snapshot.val();
+            if (!pc.currentRemoteDescription && data?.offer) {
+                const offerDescription = new RTCSessionDescription(data.offer);
+                await pc.setRemoteDescription(offerDescription);
+
+                const answerDescription = await pc.createAnswer();
+                await pc.setLocalDescription(answerDescription);
+
+                const answer = {
+                    sdp: answerDescription.sdp,
+                    type: answerDescription.type,
+                };
+
+                await update(sessionRef, { answer });
+                console.log('Answer sent successfully');
+            }
+        });
+
+        // Push ICE candidates
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                const candidatesRef = push(ref(db, `sessions/${sid}/webrtc/${role}Candidates`));
+                set(candidatesRef, event.candidate.toJSON());
+            }
+        };
+
+        // Listen for remote ICE candidates
+        const remoteRole = role === 'patient' ? 'doctor' : 'patient';
+        onValue(ref(db, `sessions/${sid}/webrtc/${remoteRole}Candidates`), (snapshot) => {
+            snapshot.forEach((child) => {
+                const data = child.val();
+                if (data) {
+                    const candidate = new RTCIceCandidate(data);
+                    pc.addIceCandidate(candidate);
+                }
+            });
+        });
+
+        // Setup Controls
+        setupVideoControls();
+
+    } catch (err) {
+        console.error('WebRTC Error:', err);
+        if (placeholder) placeholder.innerHTML = `<p style="color:var(--danger)">Camera Access Denied</p>`;
+    }
+}
+
+function setupVideoControls() {
+    const toggleVideo = document.getElementById('toggle-video');
+    const toggleAudio = document.getElementById('toggle-audio');
+
+    toggleVideo?.addEventListener('click', () => {
+        const videoTrack = localStream.getVideoTracks()[0];
+        videoTrack.enabled = !videoTrack.enabled;
+        toggleVideo.classList.toggle('off', !videoTrack.enabled);
+    });
+
+    toggleAudio?.addEventListener('click', () => {
+        const audioTrack = localStream.getAudioTracks()[0];
+        audioTrack.enabled = !audioTrack.enabled;
+        toggleAudio.classList.toggle('off', !audioTrack.enabled);
+    });
+}
+
+function stopVideoCall() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (pc) {
+        pc.close();
+    }
 }
 
 // Hide Consultation UI
@@ -448,6 +567,7 @@ confirmEndBtn?.addEventListener('click', async () => {
         console.log('✓ UI cleaned');
 
         console.log('=== Session End Complete ===');
+        stopVideoCall();
         alert('Consultation completed successfully! Prescription sent to patient.');
 
         currentSessionId = null;

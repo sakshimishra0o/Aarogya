@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -228,6 +228,7 @@
                                     <span id="v-spo2">--</span>
                                 </div>
                             </div>
+                            <p id="v-updated" style="font-size:0.7rem; color:var(--text-muted); text-align:right; margin-top:0.5rem;"></p>
                         </div>
 
                         <div class="card reports-card">
@@ -240,9 +241,17 @@
 
                     <div class="main-consultation-area">
                         <div class="video-section card">
-                            <div class="video-placeholder">
-                                <img src="https://img.icons8.com/ios-filled/100/ffffff/video-call.png" alt="Video">
-                                <p>Patient Video Feed</p>
+                            <div class="video-feed-container">
+                                <video id="remote-video" autoplay playsinline class="remote-video"></video>
+                                <video id="local-video" autoplay playsinline muted class="local-video"></video>
+                                <div id="video-placeholder" class="video-placeholder">
+                                    <img src="https://img.icons8.com/ios-filled/100/ffffff/video-call.png" alt="Video">
+                                    <p>Connecting to Patient...</p>
+                                </div>
+                            </div>
+                            <div class="video-controls">
+                                <button id="toggle-video" class="btn btn-icon-round"><span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></span></button>
+                                <button id="toggle-audio" class="btn btn-icon-round"><span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></span></button>
                             </div>
                         </div>
 

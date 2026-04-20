@@ -16,6 +16,16 @@ let currentSessionId = null;
 let assignedDoctorId = null;
 let failSafeTimer = null;
 
+// WebRTC Globals
+let pc = null;
+let localStream = null;
+const servers = {
+    iceServers: [
+        { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
+    ],
+    iceCandidatePoolSize: 10,
+};
+
 const consultationArea = document.getElementById('consultation-area');
 
 // DOM Elements
@@ -332,6 +342,121 @@ async function startSession(docId, docName, symptoms) {
 
     // Start monitoring
     startFailSafeWatcher(docId);
+
+    // Initialize Video Call
+    setTimeout(() => {
+        setupWebRTC(currentSessionId, 'patient');
+    }, 1000);
+}
+
+// ==========================================
+/* ===== WebRTC SIGNALING LOGIC ===== */
+// ==========================================
+
+async function setupWebRTC(sid, role) {
+    console.log(`Setting up WebRTC for ${role} in session ${sid}`);
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+    const placeholder = document.getElementById('video-placeholder');
+
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (localVideo) localVideo.srcObject = localStream;
+
+        pc = new RTCPeerConnection(servers);
+
+        localStream.getTracks().forEach((track) => {
+            pc.addTrack(track, localStream);
+        });
+
+        pc.ontrack = (event) => {
+            console.log('Got remote track:', event.streams[0]);
+            if (remoteVideo) {
+                remoteVideo.srcObject = event.streams[0];
+                if (placeholder) placeholder.classList.add('hidden');
+            }
+        };
+
+        const sessionRef = ref(db, `sessions/${sid}/webrtc`);
+
+        if (role === 'patient') {
+            // Patient is the offerer
+            const offerDescription = await pc.createOffer();
+            await pc.setLocalDescription(offerDescription);
+
+            const offer = {
+                sdp: offerDescription.sdp,
+                type: offerDescription.type,
+            };
+
+            await update(sessionRef, { offer });
+
+            // Listen for answer
+            onValue(sessionRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!pc.currentRemoteDescription && data?.answer) {
+                    const answerDescription = new RTCSessionDescription(data.answer);
+                    pc.setRemoteDescription(answerDescription);
+                    console.log('Answer set successfully');
+                }
+            });
+        } else {
+            // Doctor is the answerer (handled in doctor.js)
+        }
+
+        // Push ICE candidates
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                const candidatesRef = push(ref(db, `sessions/${sid}/webrtc/${role}Candidates`));
+                set(candidatesRef, event.candidate.toJSON());
+            }
+        };
+
+        // Listen for remote ICE candidates
+        const remoteRole = role === 'patient' ? 'doctor' : 'patient';
+        onValue(ref(db, `sessions/${sid}/webrtc/${remoteRole}Candidates`), (snapshot) => {
+            snapshot.forEach((child) => {
+                const data = child.val();
+                if (data) {
+                    const candidate = new RTCIceCandidate(data);
+                    pc.addIceCandidate(candidate);
+                }
+            });
+        });
+
+        // Setup Controls
+        setupVideoControls();
+
+    } catch (err) {
+        console.error('WebRTC Error:', err);
+        if (placeholder) placeholder.innerHTML = `<p style="color:var(--danger)">Camera Access Denied</p>`;
+    }
+}
+
+function setupVideoControls() {
+    const toggleVideo = document.getElementById('toggle-video');
+    const toggleAudio = document.getElementById('toggle-audio');
+
+    toggleVideo?.addEventListener('click', () => {
+        const videoTrack = localStream.getVideoTracks()[0];
+        videoTrack.enabled = !videoTrack.enabled;
+        toggleVideo.classList.toggle('off', !videoTrack.enabled);
+    });
+
+    toggleAudio?.addEventListener('click', () => {
+        const audioTrack = localStream.getAudioTracks()[0];
+        audioTrack.enabled = !audioTrack.enabled;
+        toggleAudio.classList.toggle('off', !audioTrack.enabled);
+    });
+}
+
+function stopVideoCall() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (pc) {
+        pc.close();
+    }
 }
 
 // Show Consultation Overlay (The "Next Panel" experience)
@@ -363,6 +488,7 @@ function showConsultation(docName) {
         const session = snap.val();
         if (session && session.endTime) {
             stopFailSafeWatcher();
+            stopVideoCall();
             alert('Consultation ended. Prescription received.');
             window.location.reload(); // Refresh to go back to dashboard
         }
@@ -503,37 +629,46 @@ if (!vitalsForm) {
 vitalsForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     console.log('Vitals form submitted');
-    console.log('Current session ID:', currentSessionId);
-
+    
     if (!currentSessionId) {
-        alert("You must be in an active session to update vitals.");
-        console.warn('No active session for vitals update');
+        alert("⚠️ No active session found. Please start a consultation first.");
         return;
     }
 
-    const btn = vitalsForm.querySelector('button[type="submit"]');
+    const btn = vitalsForm.querySelector('button[type="submit"]') || document.querySelector('button[form="vitals-form"]');
     const originalText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = 'Updating...';
-
-    const vitals = {
-        bp: document.getElementById('v-bp').value,
-        temp: document.getElementById('v-temp').value,
-        sugar: document.getElementById('v-sugar').value,
-        spo2: document.getElementById('v-spo2').value,
-        updatedAt: Date.now()
-    };
-
-    console.log('Updating vitals:', vitals);
-
+    
     try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Updating...';
+
+        const vitals = {
+            bp: document.getElementById('v-bp').value.trim(),
+            temp: document.getElementById('v-temp').value.trim(),
+            sugar: document.getElementById('v-sugar').value.trim(),
+            spo2: document.getElementById('v-spo2').value.trim(),
+            updatedAt: Date.now()
+        };
+
+        if (!vitals.bp && !vitals.temp && !vitals.sugar && !vitals.spo2) {
+            throw new Error("Please enter at least one vital value.");
+        }
+
         await update(ref(db, `sessions/${currentSessionId}/healthData`), vitals);
-        console.log('Vitals updated successfully');
-        alert('Vitals updated! Doctor can see this immediately.');
+        
+        // Success Animation
+        btn.classList.add('btn-success');
+        btn.innerText = '✓ Updated';
+        
+        setTimeout(() => {
+            btn.classList.remove('btn-success');
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }, 2000);
+
     } catch (err) {
         console.error('Vitals update error:', err);
         alert('Failed to update: ' + err.message);
-    } finally {
         btn.disabled = false;
         btn.innerText = originalText;
     }
@@ -563,7 +698,34 @@ async function loadPatientReports() {
     onValue(ref(db, `users/patients/${currentPatient.uid}/reports`), (snap) => {
         const reports = snap.val() || {};
         renderReportsList(reports);
+        renderDashboardReports(reports);
     });
+}
+
+function renderDashboardReports(reports) {
+    const container = document.getElementById('dashboard-reports-list');
+    if (!container) return;
+
+    const reportsArray = Object.entries(reports)
+        .sort((a, b) => b[1].uploadedAt - a[1].uploadedAt)
+        .slice(0, 3);
+
+    if (reportsArray.length === 0) {
+        container.innerHTML = '<div class="card empty-state-sm"><p style="color:var(--text-muted);font-size:0.9rem;">No recent reports found.</p></div>';
+        return;
+    }
+
+    container.innerHTML = reportsArray.map(([id, report]) => `
+        <div class="card" style="padding:1rem; margin-bottom:0.75rem; border-left:4px solid var(--primary);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4 style="font-size:0.95rem;">${report.description}</h4>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(report.uploadedAt).toLocaleDateString()}</span>
+                </div>
+                <button class="btn btn-sm btn-outline" onclick="viewReport('${report.downloadURL}')">View</button>
+            </div>
+        </div>
+    `).join('');
 }
 
 function renderReportsList(reports) {
@@ -673,13 +835,19 @@ uploadReportForm?.addEventListener('submit', async (e) => {
 
         await push(ref(db, `users/patients/${currentPatient.uid}/reports`), reportData);
 
-        alert('Report uploaded successfully!');
+        // Also add to a global/searchable reports path if needed for admin
+        // await push(ref(db, `reports/${currentPatient.uid}`), reportData);
+
+        alert('✅ Report uploaded successfully! Your doctor can now view it.');
         descInput.value = '';
         fileInput.value = '';
 
+        // Optional: Switch to reports view to see it
+        switchView('reports');
+
     } catch (error) {
         console.error('Upload error:', error);
-        alert('Failed to upload report: ' + error.message);
+        alert('❌ Failed to upload report: ' + error.message + "\n\nTip: Ensure your file is under 5MB and you have a stable connection.");
     } finally {
         btn.disabled = false;
         btn.innerText = originalText;
