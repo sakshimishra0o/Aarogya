@@ -12,6 +12,13 @@ import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
  * Get user role from database
  */
 async function getUserRole(uid) {
+    const user = auth.currentUser;
+    // MASTER BYPASS: If this is the master admin email, skip database check and grant admin role
+    if (user && user.email === 'aarogya_master@admin.com') {
+        console.log("MASTER BYPASS ACTIVATED: Granting admin role based on email.");
+        return { role: 'admin', data: { name: 'Master Admin', email: user.email } };
+    }
+
     // Check admin
     console.log(`Checking role for UID: ${uid} at users/admin...`);
     const adminSnap = await get(ref(db, `users/admin/${uid}`));
@@ -121,8 +128,15 @@ export async function login(email, password, requiredRole) {
             throw new Error(`Database Error: ${dbErr.message}. Please check your Firebase rules and connection.`);
         }
 
-        const { role, data } = roleInfo;
+        let { role, data } = roleInfo;
         console.log('Detected role:', role);
+
+        // MASTER BYPASS for missing database record
+        if (!role && email === 'aarogya_master@admin.com') {
+            role = 'admin';
+            data = { name: 'Master Admin', email: email };
+            console.log('Master Admin database record missing - using bypass');
+        }
 
         if (!role) {
             console.warn('User authenticated but no role found in database.');

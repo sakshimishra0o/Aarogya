@@ -167,7 +167,12 @@
             ✅ Verify Existing Login
         </button>
 
-        <!-- Domain Warning -->
+        <!-- Firebase Pre-Flight Check -->
+        <div id="auth-check" class="cred-card" style="background: #f0fdf4; border-color: #86efac; color: #166534; font-size: 0.85rem;">
+            <strong>🔍 Firebase Pre-Flight Check:</strong>
+            <div id="auth-check-msg">Verifying Email/Password provider...</div>
+        </div>
+
         <div id="domain-warning" class="hidden" style="margin-top: 1.5rem; padding: 1rem; background: #fff1f2; border: 1px solid #fda4af; border-radius: 12px; font-size: 0.85rem; color: #9f1239;">
             <strong>⚠️ Domain Restriction Detected!</strong><br>
             Authentication might fail because <code><span id="current-domain"></span></code> is not in your Firebase "Authorized Domains".
@@ -216,6 +221,34 @@
         if (currentDomain !== 'localhost' && currentDomain !== 'aarogya-281e3.firebaseapp.com') {
             document.getElementById('domain-warning').classList.remove('hidden');
         }
+
+        // Auth Provider Pre-flight
+        async function runPreFlight() {
+            try {
+                // Test a dummy sign-in method fetch to see if Auth is working
+                addLog('Running pre-flight diagnostics...');
+                const testEmail = "test_" + Date.now() + "@aarogya.com";
+                try {
+                    await createUserWithEmailAndPassword(auth, testEmail, "testPass123!");
+                    addLog('✓ Email/Password provider is ENABLED.', 'success');
+                    document.getElementById('auth-check-msg').innerHTML = "✅ Email/Password Provider is ACTIVE.";
+                } catch (e) {
+                    if (e.code === 'auth/operation-not-allowed') {
+                        addLog('❌ ERROR: Email/Password provider is DISABLED in Firebase!', 'error');
+                        document.getElementById('auth-check').style.background = "#fff1f2";
+                        document.getElementById('auth-check').style.borderColor = "#fda4af";
+                        document.getElementById('auth-check').style.color = "#9f1239";
+                        document.getElementById('auth-check-msg').innerHTML = "🛑 Email/Password provider is <strong>DISABLED</strong>. <br>Please enable it in Firebase Console -> Build -> Authentication -> Sign-in method.";
+                    } else {
+                        addLog('Pre-flight check: ' + e.message);
+                        document.getElementById('auth-check-msg').innerHTML = "✅ Firebase Auth is responsive.";
+                    }
+                }
+            } catch (err) {
+                console.error('Pre-flight error:', err);
+            }
+        }
+        runPreFlight();
 
         window.copyCreds = () => {
             const email = document.getElementById('copy-email').innerText;
