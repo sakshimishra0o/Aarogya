@@ -503,16 +503,16 @@ function showConsultation(docName) {
 async function loadPatientHistory(patientId) {
     if (!patientId) return;
 
-    try {
-        console.log('Loading history for patient:', patientId);
-        const sessionsQuery = query(
-            ref(db, 'sessions'),
-            orderByChild('patientId'),
-            equalTo(patientId)
-        );
+    console.log('Loading history for patient:', patientId);
+    const sessionsQuery = query(
+        ref(db, 'sessions'),
+        orderByChild('patientId'),
+        equalTo(patientId)
+    );
 
-        const sessionsSnap = await get(sessionsQuery);
-        const allSessions = sessionsSnap.val() || {};
+    // Use onValue for real-time history updates
+    onValue(sessionsQuery, (snapshot) => {
+        const allSessions = snapshot.val() || {};
 
         // 1. Check for Active Session
         const activeEntry = Object.entries(allSessions).find(([sid, s]) =>
@@ -525,19 +525,29 @@ async function loadPatientHistory(patientId) {
             currentSessionId = sid;
             assignedDoctorId = session.doctorId;
 
-            // Don't auto-show consultation. Let user click button.
             // Update "Consult Doctor" button to "Resume"
-            if (activeEntry && quickConsultBtn) {
+            if (quickConsultBtn) {
                 quickConsultBtn.innerText = 'Resume Consultation';
                 quickConsultBtn.classList.remove('btn-primary');
                 quickConsultBtn.classList.add('btn-warning');
-
-                // Override click handler to resume instead of opening modal
                 quickConsultBtn.onclick = (e) => {
                     e.stopImmediatePropagation();
                     showConsultation(session.doctorName);
                     startFailSafeWatcher(session.doctorId);
+                    
+                    // Initialize Video Call on resume
+                    setTimeout(() => {
+                        setupWebRTC(currentSessionId, 'patient');
+                    }, 1000);
                 };
+            }
+        } else {
+            // Reset button if no active session
+            if (quickConsultBtn) {
+                quickConsultBtn.innerText = 'Consult Doctor Now';
+                quickConsultBtn.classList.add('btn-primary');
+                quickConsultBtn.classList.remove('btn-warning');
+                quickConsultBtn.onclick = null; // Restore default listener if needed or just let the main event listener handle it
             }
         }
 
@@ -546,13 +556,10 @@ async function loadPatientHistory(patientId) {
             .filter(([sid, s]) => s.patientId === patientId && s.endTime)
             .sort((a, b) => b[1].endTime - a[1].endTime);
 
-        // Populate both Compact (Dashboard) and Full (History View) lists
-        renderHistoryList('patient-history-list', patientSessions.slice(0, 3)); // Top 3 for dashboard
-        renderHistoryList('full-history-list', patientSessions); // All for full view
-
-    } catch (e) {
-        console.error('History load error:', e);
-    }
+        // Populate lists
+        renderHistoryList('patient-history-list', patientSessions.slice(0, 3));
+        renderHistoryList('full-history-list', patientSessions);
+    });
 }
 
 function renderHistoryList(elementId, sessions) {

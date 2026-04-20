@@ -596,20 +596,18 @@ cancelPrescriptionBtn?.addEventListener('click', () => {
 async function loadConsultationHistory(doctorId) {
     console.log('Loading consultation history for:', doctorId);
 
-    try {
-        const sessionsQuery = query(
-            ref(db, 'sessions'),
-            orderByChild('doctorId'),
-            equalTo(doctorId)
-        );
+    const sessionsQuery = query(
+        ref(db, 'sessions'),
+        orderByChild('doctorId'),
+        equalTo(doctorId)
+    );
 
-        const sessionsSnap = await get(sessionsQuery);
-        const allSessions = sessionsSnap.val() || {};
-
-        // All sessions for this doctor are already filtered by the query
+    // Use onValue for real-time history updates
+    onValue(sessionsQuery, (snapshot) => {
+        const allSessions = snapshot.val() || {};
         const doctorSessions = Object.entries(allSessions)
             .sort((a, b) => (b[1].startTime || 0) - (a[1].startTime || 0))
-            .slice(0, 10); // Last 10 sessions
+            .slice(0, 10);
 
         // Update stats
         const totalPatients = doctorSessions.length;
@@ -649,7 +647,7 @@ async function loadConsultationHistory(doctorId) {
             });
             const duration = formatDuration(session.startTime, session.endTime);
             const isEmergency = session.emergency;
-            const isCompleted = !!session.endTime;
+            const isCompleted = session.status === 'COMPLETED' || !!session.endTime;
 
             tr.innerHTML = `
                 <td>
@@ -666,10 +664,7 @@ async function loadConsultationHistory(doctorId) {
             `;
             historyList.appendChild(tr);
         });
-
-    } catch (error) {
-        console.error('Error loading history:', error);
-    }
+    });
 }
 
 // Format duration helper
