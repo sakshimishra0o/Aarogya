@@ -118,7 +118,8 @@ document.getElementById('add-doctor-form')?.addEventListener('submit', async (e)
 
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
-    btn.textContent = '⏳ Registering…';
+    btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Registering…';
+    lucide.createIcons();
 
     const name       = document.getElementById('doc-name').value.trim();
     const email      = document.getElementById('doc-email').value.trim();
@@ -154,15 +155,15 @@ document.getElementById('add-doctor-form')?.addEventListener('submit', async (e)
             createdAt: Date.now()
         });
 
-        showToast(`✅ Dr. ${name} registered successfully! They can now log in after approval.`, 'success');
+        showToast('<i data-lucide="check-circle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:middle;"></i> Dr. ' + name + ' registered successfully! They can now log in after approval.', 'success');
         document.getElementById('doctor-modal')?.classList.add('hidden');
         document.getElementById('add-doctor-form')?.reset();
 
     } catch (err) {
         let msg = err.message;
-        if (err.code === 'auth/email-already-in-use') msg = '⚠ This email is already registered in Firebase.';
-        if (err.code === 'auth/weak-password')        msg = '⚠ Password must be at least 6 characters.';
-        if (err.code === 'auth/invalid-email')        msg = '⚠ Invalid email address format.';
+        if (err.code === 'auth/email-already-in-use') msg = 'This email is already registered in Firebase.';
+        if (err.code === 'auth/weak-password')        msg = 'Password must be at least 6 characters.';
+        if (err.code === 'auth/invalid-email')        msg = 'Invalid email address format.';
         showModalError(msg);
     } finally {
         btn.disabled = false;
@@ -222,7 +223,7 @@ function renderDoctors(doctors) {
         }
 
         let actions = '';
-        if (!approved && !blocked) actions += `<button class="btn btn-sm btn-accent" onclick="approveDoc('${uid}')">✓ Approve</button>`;
+        if (!approved && !blocked) actions += `<button class="btn btn-sm btn-accent" onclick="approveDoc('${uid}')"><i data-lucide="check" style="width:12px;height:12px;"></i> Approve</button>`;
         if (approved  && !blocked) actions += `<button class="btn btn-sm btn-warning" onclick="blockDoc('${uid}')">Block</button>`;
         if (blocked)               actions += `<button class="btn btn-sm btn-primary" onclick="unblockDoc('${uid}')">Unblock</button>`;
         actions += `<button class="btn btn-sm btn-danger" onclick="deleteDoc('${uid}')">Delete</button>`;
@@ -235,10 +236,11 @@ function renderDoctors(doctors) {
             <td style="font-size:0.82rem">${esc(doc.email || '-')}</td>
             <td>${esc(doc.phone || '-')}</td>
             <td><span class="status-indicator ${statusClass}">${statusText}</span></td>
-            <td><span style="color:${approved ? '#10b981' : '#f59e0b'};font-weight:600">${approved ? '✓ Approved' : '⏳ Pending'}</span></td>
+            <td><span style="color:${approved ? '#10b981' : '#f59e0b'};font-weight:600">${approved ? '<i data-lucide="check" style="width:12px;height:12px;display:inline;"></i> Approved' : '<i data-lucide="clock" style="width:12px;height:12px;display:inline;"></i> Pending'}</span></td>
             <td class="actions-td">${actions}</td>
         </tr>`;
     }).join('');
+    lucide.createIcons();
 }
 
 // ─── Render Patients ──────────────────────────────────────────────────────────
@@ -308,11 +310,12 @@ function renderSessions(sessions, listId, recentOnly) {
             <td>${date}</td>
             <td>${dur}</td>
             <td>
-                ${s.emergency ? '<span class="badge-emergency">⚠ EMRG</span> ' : ''}
+                ${s.emergency ? '<span class="badge-emergency"><i data-lucide="alert-triangle" style="width:10px;height:10px;"></i> EMRG</span> ' : ''}
                 <span class="status-indicator ${isLive ? 'status-active' : 'status-offline'}">${isLive ? 'LIVE' : 'Done'}</span>
             </td>
         </tr>`;
     }).join('');
+    lucide.createIcons();
 
     if (listId === 'session-list') {
         document.getElementById('stat-active').textContent    = active;
@@ -357,7 +360,8 @@ function clearModalError() {
 function showToast(msg, type = 'success') {
     const t = document.createElement('div');
     t.className = `toast toast-${type}`;
-    t.textContent = msg;
+    t.innerHTML = msg;
+    lucide.createIcons();
     document.body.appendChild(t);
     setTimeout(() => t.classList.add('toast-show'), 10);
     setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 400); }, 5000);
@@ -368,7 +372,7 @@ window.approveDoc = async uid => {
     if (!confirm('Approve this doctor? They will be able to log in immediately.')) return;
     try {
         await update(ref(db, `users/doctors/${uid}`), { approved: true, blocked: false });
-        showToast('Doctor approved! ✓', 'success');
+        showToast('Doctor approved!', 'success');
     } catch (e) { showToast(e.message, 'error'); }
 };
 
@@ -387,7 +391,7 @@ window.unblockDoc = async uid => {
     if (!confirm('Unblock this doctor?')) return;
     try {
         await update(ref(db, `users/doctors/${uid}`), { blocked: false, approved: true });
-        showToast('Doctor unblocked! ✓', 'success');
+        showToast('Doctor unblocked!', 'success');
     } catch (e) { showToast(e.message, 'error'); }
 };
 
@@ -412,7 +416,7 @@ window.unblockPatient = async uid => {
     if (!confirm('Unblock this patient?')) return;
     try {
         await update(ref(db, `users/patients/${uid}`), { blocked: false });
-        showToast('Patient unblocked! ✓', 'success');
+        showToast('Patient unblocked!', 'success');
     } catch (e) { showToast(e.message, 'error'); }
 };
 

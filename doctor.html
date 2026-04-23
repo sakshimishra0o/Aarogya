@@ -6,12 +6,11 @@
     <title>Aarogya - Doctor Portal</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { --sidebar-w: 260px; }
         .page-body { padding: 2rem; }
-        .view-section { animation: fadeIn 0.3s ease; }
         .view-section.hidden { display: none; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
         .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-bottom: 2rem; }
         .stat-card { background: #fff; border-radius: var(--radius); padding: 1.5rem; text-align: center; box-shadow: var(--shadow); border: 1px solid rgba(61, 107, 129, 0.05); }
@@ -36,6 +35,8 @@
         .avatar { width: 40px; height: 40px; border-radius: 12px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
         .avatar.sm { width: 36px; height: 36px; font-size: 0.875rem; }
 
+        .nav-item i { width: 18px; height: 18px; margin-right: 0.75rem; }
+
         @media (max-width: 767px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
@@ -48,22 +49,24 @@
 <body>
     <!-- Auth -->
     <div id="auth-container" class="auth-page">
-        <div class="auth-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">🩺</div>
-            <h1 style="text-align: center; color: var(--primary); margin-bottom: 0.5rem;">Doctor Portal</h1>
-            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Authorized Practitioner Login</p>
-            <form id="login-form">
-                <div class="input-group">
-                    <label>Email Address</label>
-                    <input type="email" id="email" required placeholder="doctor@hospital.com">
-                </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" id="password" required placeholder="••••••••">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%">🔑 Access Dashboard</button>
-            </form>
-            <div id="approval-notice" class="notice hidden">Pending admin approval...</div>
+        <div class="container">
+            <div class="auth-card">
+                <div style="text-align: center; color: var(--primary); margin-bottom: 1rem;"><i data-lucide="stethoscope" style="width:48px;height:48px;margin:0 auto;"></i></div>
+                <h1 style="text-align: center; color: var(--primary); margin-bottom: 0.5rem;">Doctor Portal</h1>
+                <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Authorized Practitioner Login</p>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" required placeholder="doctor@hospital.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%"><i data-lucide="key" style="width:16px;height:16px;margin-right:8px;"></i> Access Dashboard</button>
+                </form>
+                <div id="approval-notice" class="notice hidden"><i data-lucide="alert-circle" style="width:16px;height:16px;display:inline;margin-right:8px;"></i> Pending admin approval...</div>
+            </div>
         </div>
     </div>
 
@@ -75,21 +78,21 @@
                     <div style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">A</div>
                     <span style="font-weight:700;">Aarogya</span>
                 </div>
-                <button id="close-sidebar" class="btn" style="background:transparent; color:white; min-height:auto; padding:0.5rem;">✕</button>
+                <button id="close-sidebar" class="btn" style="background:transparent; color:white; min-height:auto; padding:0.5rem;"><i data-lucide="x"></i></button>
             </div>
             <nav class="sidebar-nav">
-                <button class="nav-item active" data-section="dashboard">📊 Dashboard</button>
-                <button class="nav-item" data-section="profile">👤 My Profile</button>
-                <button class="nav-item" data-section="history">📋 All Consultations</button>
-                <button class="nav-item" data-section="patients">🧑‍🤝‍🧑 All Patients</button>
-                <button id="logout-btn" class="nav-item logout">🚪 Logout</button>
+                <button class="nav-item active" data-section="dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</button>
+                <button class="nav-item" data-section="profile"><i data-lucide="user"></i> My Profile</button>
+                <button class="nav-item" data-section="history"><i data-lucide="clipboard-list"></i> All Consultations</button>
+                <button class="nav-item" data-section="patients"><i data-lucide="users"></i> All Patients</button>
+                <button id="logout-btn" class="nav-item logout"><i data-lucide="log-out"></i> Logout</button>
             </nav>
         </aside>
 
         <div class="main-content">
             <header class="top-header">
                 <div style="display:flex; align-items:center; gap:1rem;">
-                    <button id="menu-toggle" class="btn" style="display:none; background:transparent; border:1px solid #e2e8f0; color:var(--text-main); min-height:auto; padding:0.5rem;">☰</button>
+                    <button id="menu-toggle" class="btn" style="display:none; background:transparent; border:1px solid #e2e8f0; color:var(--text-main); min-height:auto; padding:0.5rem;"><i data-lucide="menu"></i></button>
                     <div style="display:flex; align-items:center; gap:0.75rem;">
                         <div class="avatar sm">D</div>
                         <div>
@@ -110,10 +113,10 @@
                         <div class="stat-card"><label>Emergencies</label><h2 style="color:var(--danger);" id="stat-emergencies">0</h2></div>
                     </div>
                     <div class="card" style="background:var(--primary-light); border-color:var(--primary);">
-                        <p style="font-size:0.875rem; color:var(--primary-dark);">🟢 You are <strong>ONLINE</strong> — Patients can reach you now.</p>
+                        <p style="font-size:0.875rem; color:var(--primary-dark);"><i data-lucide="check-circle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> You are <strong>ONLINE</strong> — Patients can reach you now.</p>
                     </div>
                     <div class="card">
-                        <h3>Recent Consultations</h3>
+                        <h3>Recent Consultation Sessions</h3>
                         <div style="overflow-x:auto;">
                             <table style="width:100%; border-collapse:collapse;">
                                 <thead><tr><th style="text-align:left; padding:1rem; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Patient</th><th style="text-align:left; padding:1rem; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Symptoms</th><th style="text-align:left; padding:1rem; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Date</th><th style="text-align:left; padding:1rem; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Status</th></tr></thead>
@@ -126,7 +129,7 @@
                 <!-- Profile -->
                 <div id="profile-view" class="view-section hidden">
                     <div class="card">
-                        <h3>👤 My Profile</h3>
+                        <h3><i data-lucide="user" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> My Profile</h3>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
                             <div class="input-group"><label>Full Name</label><div id="doc-profile-name" style="font-weight:600;">--</div></div>
                             <div class="input-group"><label>Email</label><div id="doc-profile-email" style="font-weight:600;">--</div></div>
@@ -139,7 +142,7 @@
                 <!-- History -->
                 <div id="history-view" class="view-section hidden">
                     <div class="card">
-                        <h3>📋 All Consultations</h3>
+                        <h3><i data-lucide="clipboard-list" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> All Consultations</h3>
                         <div id="full-history-list"></div>
                     </div>
                 </div>
@@ -147,7 +150,7 @@
                 <!-- Patients -->
                 <div id="patients-view" class="view-section hidden">
                     <div class="card">
-                        <h3>🧑‍🤝‍🧑 All Patients</h3>
+                        <h3><i data-lucide="users" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> All Patients</h3>
                         <div id="all-patients-list"></div>
                     </div>
                 </div>
@@ -157,7 +160,7 @@
                     <div class="consultation-grid">
                         <div class="patient-sidebar">
                             <div class="card">
-                                <h3>🧑 Patient</h3>
+                                <h3><i data-lucide="user" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Patient</h3>
                                 <div style="font-size:0.9rem; line-height:1.8;">
                                     <p><strong>Name:</strong> <span id="p-name">--</span></p>
                                     <p><strong>Age:</strong> <span id="p-age">--</span></p>
@@ -165,7 +168,7 @@
                                 </div>
                             </div>
                             <div class="card">
-                                <h3>📊 Vitals</h3>
+                                <h3><i data-lucide="activity" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Vitals</h3>
                                 <div class="vitals-display" style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
                                     <div class="vital-box"><label>BP</label><span id="v-bp">--</span></div>
                                     <div class="vital-box"><label>Temp</label><span id="v-temp">--</span></div>
@@ -182,24 +185,24 @@
                                     <video id="remote-video" autoplay playsinline class="remote-video"></video>
                                     <video id="local-video" autoplay playsinline muted class="local-video"></video>
                                     <div id="video-placeholder" class="video-placeholder" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white;">
-                                        <div style="font-size:3rem;">📹</div>
+                                        <div style="text-align:center; color:white; margin-bottom:1rem;"><i data-lucide="video" style="width:48px;height:48px;margin:0 auto;"></i></div>
                                         <p>Connecting...</p>
                                     </div>
                                 </div>
                                 <div style="display:flex; justify-content:center; gap:1rem; padding:1rem; background:rgba(0,0,0,0.4);">
-                                    <button id="toggle-video" class="btn-icon-round">📷</button>
-                                    <button id="toggle-audio" class="btn-icon-round">🎙</button>
+                                    <button id="toggle-video" class="btn-icon-round"><i data-lucide="camera"></i></button>
+                                    <button id="toggle-audio" class="btn-icon-round"><i data-lucide="mic"></i></button>
                                 </div>
                             </div>
                             <div class="card">
-                                <h3>💬 Chat</h3>
+                                <h3><i data-lucide="message-square" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Chat</h3>
                                 <div id="chat-messages" class="chat-box"></div>
                                 <div style="display:flex; gap:0.5rem;">
                                     <input type="text" id="chat-input" placeholder="Type a message...">
                                     <button id="send-btn" class="btn btn-primary">Send</button>
                                 </div>
                             </div>
-                            <button id="end-session-btn" class="btn btn-danger" style="width:100%; padding:1.25rem; font-size:1.1rem;">✍️ End & Prescribe</button>
+                            <button id="end-session-btn" class="btn btn-danger" style="width:100%; padding:1.25rem; font-size:1.1rem;"><i data-lucide="pen-tool" style="width:20px;height:20px;margin-right:8px;"></i> End & Prescribe</button>
                         </div>
                     </div>
                 </div>
@@ -210,7 +213,7 @@
     <!-- Modal -->
     <div id="prescription-modal" class="modal hidden">
         <div class="modal-content">
-            <h2 style="color:var(--primary);">📝 Write Prescription</h2>
+            <h2 style="color:var(--primary);"><i data-lucide="clipboard-list" style="width:24px;height:24px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Write Prescription</h2>
             <textarea id="prescription-text" placeholder="Medicines, dosage, and advice..."></textarea>
             <div class="modal-actions">
                 <button id="cancel-prescription-btn" class="btn btn-outline">Cancel</button>
@@ -220,5 +223,10 @@
     </div>
 
     <script type="module" src="./scripts/doctor.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
 </body>
 </html>

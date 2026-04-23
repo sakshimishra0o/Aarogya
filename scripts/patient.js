@@ -272,7 +272,7 @@ document.getElementById('chat-input')?.addEventListener('keypress', e => { if (e
 window.flagEmergency = async () => {
     if (!currentSessionId) return;
     await update(ref(db, `sessions/${currentSessionId}`), { emergency: true });
-    showToast('⚠️ Emergency flagged! Doctor has been notified.', 'warning');
+    showToast('<i data-lucide="alert-triangle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:middle;"></i> Emergency flagged! Doctor has been notified.', 'warning');
 };
 
 // ─── Vitals: Real-time update ─────────────────────────────────────────────────
@@ -319,25 +319,26 @@ async function sendVitals(silent = false) {
         return;
     }
 
-    if (btn && !silent) { btn.disabled = true; btn.textContent = '⏳ Updating…'; }
+    if (btn && !silent) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Updating…'; lucide.createIcons(); }
 
     try {
         await update(ref(db, `sessions/${currentSessionId}/healthData`), vitals);
         if (btn && !silent) {
-            btn.textContent = '✅ Sent to Doctor!';
+            btn.innerHTML = '<i data-lucide="check-circle" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Sent to Doctor!';
+            lucide.createIcons();
             btn.style.background = '#10b981';
-            setTimeout(() => { btn.textContent = '📡 Update Vitals'; btn.style.background = ''; btn.disabled = false; }, 2500);
+            setTimeout(() => { btn.innerHTML = '<i data-lucide="rss" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Update Vitals'; btn.style.background = ''; btn.disabled = false; lucide.createIcons(); }, 2500);
         }
         // Visual confirmation
         const syncEl = document.getElementById('vitals-sync-status');
         if (syncEl) {
-            syncEl.textContent = `🟢 Synced ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+            syncEl.innerHTML = `<span style="color:#10b981">●</span> Synced ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
             syncEl.style.color = '#10b981';
             setTimeout(() => { if (syncEl) syncEl.style.color = '#94a3b8'; }, 8000);
         }
     } catch (err) {
         if (!silent) showToast('Failed: ' + err.message, 'error');
-        if (btn) { btn.disabled = false; btn.textContent = '📡 Update Vitals'; btn.style.background = ''; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rss" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Update Vitals'; btn.style.background = ''; lucide.createIcons(); }
     }
 }
 
@@ -352,13 +353,14 @@ function loadPatientHistory(patientId) {
             currentSessionId = sid; assignedDoctorId = session.doctorId;
             const btn = document.getElementById('quick-consult-btn');
             if (btn) {
-                btn.textContent = '▶ Resume Consultation';
+                btn.innerHTML = '<i data-lucide="play" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Resume Consultation';
+                lucide.createIcons();
                 btn.style.background = '#f59e0b';
                 btn.onclick = e => { e.stopImmediatePropagation(); showConsultation(session.doctorName); startFailSafe(session.doctorId); setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1200); };
             }
         } else {
             const btn = document.getElementById('quick-consult-btn');
-            if (btn) { btn.textContent = 'Consult Doctor Now'; btn.style.background = ''; btn.onclick = null; }
+            if (btn) { btn.innerHTML = '<i data-lucide="stethoscope" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Consult Doctor Now'; btn.style.background = ''; btn.onclick = null; lucide.createIcons(); }
         }
         const done = Object.entries(all).filter(([,s]) => s.endTime).sort((a,b) => b[1].endTime - a[1].endTime);
         renderHistory('patient-history-list', done.slice(0,3));
@@ -377,8 +379,8 @@ function renderHistory(id, sessions) {
             </div>
             <div class="history-card-body">
                 <p style="font-size:0.875rem;color:#475569">${s.symptoms || 'General Checkup'}</p>
-                ${s.prescription ? '<span class="badge-success">📋 Prescription Available</span>' : ''}
-                ${s.emergency ? '<span class="badge-danger">⚠ Emergency</span>' : ''}
+                ${s.prescription ? '<span class="badge-success"><i data-lucide="clipboard-list" style="width:12px;height:12px;display:inline;margin-right:4px;"></i> Prescription Available</span>' : ''}
+                ${s.emergency ? '<span class="badge-danger"><i data-lucide="alert-triangle" style="width:12px;height:12px;display:inline;margin-right:4px;"></i> Emergency</span>' : ''}
             </div>
         </div>
     `).join('');
@@ -457,7 +459,7 @@ document.getElementById('upload-report-form')?.addEventListener('submit', async 
             description: desc, fileName: file.name, fileType: file.type, fileSize: file.size,
             downloadURL: url, storagePath: path, uploadedAt: Date.now(), patientId: currentPatient.uid
         });
-        showToast('✅ Report uploaded successfully!', 'success');
+        showToast('<i data-lucide="check-circle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:middle;"></i> Report uploaded successfully!', 'success');
         e.target.reset();
         switchView('reports');
     } catch (err) { showToast('Upload failed: ' + err.message, 'error'); }
@@ -481,7 +483,8 @@ function stopFailSafe() { if (failSafeTimer) clearInterval(failSafeTimer); }
 function showToast(msg, type='success') {
     let t = document.getElementById('p-toast');
     if (!t) { t = document.createElement('div'); t.id = 'p-toast'; t.style.cssText = 'position:fixed;bottom:2rem;right:2rem;padding:0.875rem 1.5rem;border-radius:12px;font-weight:600;font-size:0.875rem;z-index:9999;max-width:360px;transform:translateY(100px);opacity:0;transition:all 0.3s;box-shadow:0 8px 24px rgba(0,0,0,0.15)'; document.body.appendChild(t); }
-    t.textContent = msg;
+    t.innerHTML = msg;
+    lucide.createIcons();
     t.style.background = type==='error'?'#fee2e2':type==='warning'?'#fef3c7':'#d1fae5';
     t.style.color = type==='error'?'#991b1b':type==='warning'?'#92400e':'#065f46';
     setTimeout(() => { t.style.transform='translateY(0)'; t.style.opacity='1'; }, 10);

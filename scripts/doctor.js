@@ -92,7 +92,7 @@ function monitorSessions(uid) {
             const session = sSnap.val();
             if (session && session.status === 'ACTIVE' && !session.endTime) {
                 currentSessionId = data.activeSessionId;
-                showNotification(`🔔 New Patient: ${session.patientName || 'Patient'}\nSymptoms: ${session.symptoms || 'N/A'}`);
+                showNotification(`New Patient: ${session.patientName || 'Patient'}\nSymptoms: ${session.symptoms || 'N/A'}`);
                 showConsultation(currentSessionId);
             } else {
                 await update(ref(db, `users/doctors/${uid}`), { activeSessionId: null, busy: false }).catch(() => {});
@@ -124,8 +124,9 @@ function showConsultation(sid) {
         // Patient name + emergency flag
         const nameEl = document.getElementById('p-name');
         if (nameEl) {
-            nameEl.innerHTML = `${session.patientName || 'Patient'}${session.emergency ? ' <span style="color:#ef4444">⚠ EMERGENCY</span>' : ''}`;
+            nameEl.innerHTML = `${session.patientName || 'Patient'}${session.emergency ? ' <span style="color:#ef4444"><i data-lucide="alert-triangle" style="width:16px;height:16px;display:inline;margin-left:8px;vertical-align:middle;"></i> EMERGENCY</span>' : ''}`;
             if (session.emergency) nameEl.style.color = '#ef4444';
+            lucide.createIcons();
         }
         const sxEl = document.getElementById('p-symptoms');
         if (sxEl) sxEl.textContent = session.symptoms || 'Not specified';
@@ -181,7 +182,7 @@ function showConsultation(sid) {
         const updEl = document.getElementById('v-updated');
         if (updEl && hd.updatedAt) {
             const t = new Date(hd.updatedAt);
-            updEl.textContent = `🟢 Updated: ${t.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+            updEl.innerHTML = `<span style="color:#10b981">●</span> Updated: ${t.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
             updEl.style.color = '#10b981';
             // Fade back to grey after 10s
             setTimeout(() => { if (updEl) updEl.style.color = '#94a3b8'; }, 10000);
@@ -304,7 +305,7 @@ document.getElementById('confirm-end-btn')?.addEventListener('click', async () =
         document.getElementById('prescription-text').value = '';
         document.getElementById('prescription-modal')?.classList.add('hidden');
         stopVideoCall();
-        showToast('✅ Consultation completed! Prescription sent to patient.', 'success');
+        showToast('<i data-lucide="check-circle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:middle;"></i> Consultation completed! Prescription sent to patient.', 'success');
         currentSessionId = null; currentPatientId = null;
         hideConsultation();
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
@@ -333,13 +334,14 @@ function renderHistoryTable(id, sessions) {
     if (!sessions.length) { el.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem">No consultations yet.</td></tr>`; return; }
     el.innerHTML = sessions.map(([sid, s]) => `
         <tr>
-            <td><strong>${s.patientName || 'Patient'}</strong>${s.emergency ? ' <span style="color:#ef4444">⚠</span>' : ''}</td>
+            <td><strong>${s.patientName || 'Patient'}</strong>${s.emergency ? ' <span style="color:#ef4444"><i data-lucide="alert-triangle" style="width:12px;height:12px;display:inline;margin-left:4px;"></i></span>' : ''}</td>
             <td>${s.symptoms?.substring(0,40) || '--'}${(s.symptoms?.length||0)>40?'…':''}</td>
             <td style="font-size:0.82rem">${s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '-'}</td>
             <td>${formatDur(s.startTime, s.endTime)}</td>
             <td><span class="status-indicator ${s.endTime ? 'status-offline' : 'status-active'}">${s.endTime ? '✓ Done' : '⏺ Active'}</span></td>
         </tr>
     `).join('');
+    lucide.createIcons();
 }
 
 // Load All Patients
@@ -392,7 +394,8 @@ function formatDur(start, end) {
 function showToast(msg, type='success') {
     let t = document.getElementById('toast-msg');
     if (!t) { t = document.createElement('div'); t.id = 'toast-msg'; t.style.cssText = 'position:fixed;bottom:2rem;right:2rem;padding:0.875rem 1.5rem;border-radius:12px;font-weight:600;font-size:0.875rem;z-index:9999;max-width:360px;transform:translateY(100px);opacity:0;transition:all 0.3s;box-shadow:0 8px 24px rgba(0,0,0,0.15)'; document.body.appendChild(t); }
-    t.textContent = msg;
+    t.innerHTML = msg;
+    lucide.createIcons();
     t.style.background = type==='error'?'#fee2e2':type==='warning'?'#fef3c7':'#d1fae5';
     t.style.color = type==='error'?'#991b1b':type==='warning'?'#92400e':'#065f46';
     setTimeout(() => { t.style.transform='translateY(0)'; t.style.opacity='1'; }, 10);

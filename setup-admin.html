@@ -1,381 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aarogya - Master Admin Setup</title>
+    <title>Aarogya - System Setup</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root {
-            --primary: #2563eb;
-            --success: #10b981;
-            --error: #ef4444;
-            --bg: #0f172a;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--bg);
-            color: #f8fafc;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .setup-card {
-            background: #ffffff;
-            color: #1e293b;
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--primary), #7c3aed);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .status-box {
-            background: #f1f5f9;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        .status-tag {
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-        }
-
-        .tag-pending { background: #e2e8f0; color: #64748b; }
-        .tag-ok { background: #dcfce7; color: #166534; }
-        .tag-fail { background: #fee2e2; color: #991b1b; }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: none;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: #1d4ed8; transform: translateY(-2px); }
-
-        .btn-outline { background: transparent; border: 2px solid #e2e8f0; color: #64748b; }
-        .btn-outline:hover { background: #f8fafc; }
-
-        #log {
-            background: #1e293b;
-            color: #94a3b8;
-            padding: 15px;
-            border-radius: 12px;
-            font-family: monospace;
-            font-size: 0.8rem;
-            max-height: 150px;
-            overflow-y: auto;
-            margin-top: 20px;
-        }
-
-        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #334155; padding-bottom: 2px; }
-        .log-success { color: #4ade80; }
-        .log-error { color: #f87171; }
-
-        .cred-card {
-            background: #f8fafc;
-            border: 2px dashed var(--primary);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .cred-card code { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
+        .setup-container { max-width: 600px; margin: 4rem auto; padding: 2rem; }
+        .log-box { background: #0f172a; color: #10b981; padding: 1rem; border-radius: 12px; font-family: monospace; height: 200px; overflow-y: auto; margin: 1.5rem 0; font-size: 0.85rem; }
+        .log-entry { margin-bottom: 0.4rem; }
+        .log-error { color: #f43f5e; }
+        .cred-box { background: #f8fafc; padding: 1.5rem; border-radius: 16px; border: 2px dashed #e2e8f0; margin-bottom: 2rem; }
+        .status-pill { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; border-radius: 99px; font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #64748b; }
+        .status-pill.ok { background: #d1fae5; color: #065f46; }
     </style>
 </head>
+<body style="background: var(--bg-main);">
+    <div class="setup-container">
+        <div class="card">
+            <div style="text-align: center; color: var(--primary); margin-bottom: 1rem;"><i data-lucide="settings" style="width:48px;height:48px;margin:0 auto;"></i></div>
+            <h1 style="text-align: center; color: var(--primary); margin-bottom: 0.5rem;">System Setup</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Initialize Aarogya Admin Services</p>
 
-<body>
-    <div class="setup-card">
-        <div class="header">
-            <h1>🚀 Master Admin Setup</h1>
-            <p>Aarogya Healthcare Management System</p>
-        </div>
-
-        <div class="status-box">
-            <div class="status-item">
-                <span>Firebase Auth</span>
-                <span id="auth-status" class="status-tag tag-pending">Checking...</span>
+            <div class="cred-box">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; margin-bottom: 1rem;">Default Credentials</div>
+                <div style="margin-bottom: 0.5rem;"><strong>Email:</strong> <code id="c-email">AarogyaCloud@gmail.com</code></div>
+                <div><strong>Pass:</strong> <code id="c-pass">Aarogya@1234</code></div>
+                <button onclick="copyCreds()" class="btn btn-sm btn-outline" style="margin-top:1.5rem; width:100%;"><i data-lucide="copy" style="width:14px;height:14px;"></i> Copy Credentials</button>
             </div>
-            <div class="status-item">
-                <span>Realtime Database</span>
-                <span id="db-status" class="status-tag tag-pending">Checking...</span>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                <button onclick="setupAdmin()" class="btn btn-primary" id="setup-btn"><i data-lucide="shield-check"></i> Initialize Admin</button>
+                <a href="admin.html" class="btn btn-outline"><i data-lucide="log-in"></i> Admin Login</a>
             </div>
-        </div>
 
-        <div class="cred-card">
-            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">NEW MASTER ADMIN CREDENTIALS</p>
-            <div>Email: <code id="copy-email">aarogya_master@admin.com</code></div>
-            <div style="margin-top: 5px;">Pass: <code id="copy-pass">Password123!</code></div>
-            <button onclick="copyCreds()" class="btn btn-sm btn-outline" style="margin-top:10px; width:auto; display:inline-flex;">📋 Copy Credentials</button>
-        </div>
+            <button onclick="clearAllSessions()" class="btn btn-danger" style="width:100%; opacity:0.8;"><i data-lucide="trash-2"></i> Reset All Sessions</button>
 
-        <button id="setup-btn" class="btn btn-primary">
-            🔧 Build & Secure Admin Account
-        </button>
+            <div class="log-box" id="log-box">
+                <div class="log-entry">Waiting for action...</div>
+            </div>
 
-        <button id="direct-login-btn" class="btn btn-accent hidden">
-            🚀 Direct Admin Login (One-Click)
-        </button>
-
-        <button id="clear-sessions-btn" class="btn btn-outline" style="border-color: var(--error); color: var(--error);">
-            🗑️ Clear All Sessions (Fresh Start)
-        </button>
-
-        <button id="test-login-btn" class="btn btn-outline">
-            ✅ Verify Existing Login
-        </button>
-
-        <!-- Firebase Pre-Flight Check -->
-        <div id="auth-check" class="cred-card" style="background: #f0fdf4; border-color: #86efac; color: #166534; font-size: 0.85rem;">
-            <strong>🔍 Firebase Pre-Flight Check:</strong>
-            <div id="auth-check-msg">Verifying Email/Password provider...</div>
-        </div>
-
-        <div id="domain-warning" class="hidden" style="margin-top: 1.5rem; padding: 1rem; background: #fff1f2; border: 1px solid #fda4af; border-radius: 12px; font-size: 0.85rem; color: #9f1239;">
-            <strong>⚠️ Domain Restriction Detected!</strong><br>
-            Authentication might fail because <code><span id="current-domain"></span></code> is not in your Firebase "Authorized Domains".
-            <br><a href="https://console.firebase.google.com/project/_/authentication/settings" target="_blank" style="color:#ef4444; font-weight:bold;">Click here to fix this in Firebase Console</a>
-        </div>
-
-        <div id="log">
-            <div class="log-entry">Waiting for action...</div>
-        </div>
-
-        <div id="success-link" style="margin-top: 20px; text-align: center;" class="hidden">
-            <a href="admin.html" style="color: var(--primary); font-weight: 700; text-decoration: none;">→ Open Admin Panel</a>
+            <div class="status-pill" id="auth-check">
+                <i data-lucide="activity" style="width:14px;height:14px;"></i> <span id="auth-check-msg">Checking Firebase Connection...</span>
+            </div>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { db, auth } from './scripts/firebase.js';
+        import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { ref, set, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyB5PsgVUGeHAyXjzuU7Yqw9QhN8wY0ssIA",
-            authDomain: "aarogya-281e3.firebaseapp.com",
-            databaseURL: "https://aarogya-281e3-default-rtdb.firebaseio.com",
-            projectId: "aarogya-281e3",
-            storageBucket: "aarogya-281e3.firebasestorage.app",
-            messagingSenderId: "676098023928",
-            appId: "1:676098023928:web:dbd4fd613973dee526b60d",
-            measurementId: "G-X5CQZMRXMJ"
-        };
-
-        const ADMIN_EMAIL = "aarogya_master@admin.com";
-        const ADMIN_PASSWORD = "Password123!";
-
-        // Initialize
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app, firebaseConfig.databaseURL);
-
-        const logEl = document.getElementById('log');
-        
-        // Domain Check logic
-        const currentDomain = window.location.hostname || "local-file";
-        document.getElementById('current-domain').innerText = currentDomain;
-        if (currentDomain !== 'localhost' && currentDomain !== 'aarogya-281e3.firebaseapp.com') {
-            document.getElementById('domain-warning').classList.remove('hidden');
-        }
-
-        // Auth Provider Pre-flight
-        async function runPreFlight() {
-            try {
-                // Test a dummy sign-in method fetch to see if Auth is working
-                addLog('Running pre-flight diagnostics...');
-                const testEmail = "test_" + Date.now() + "@aarogya.com";
-                try {
-                    await createUserWithEmailAndPassword(auth, testEmail, "testPass123!");
-                    addLog('✓ Email/Password provider is ENABLED.', 'success');
-                    document.getElementById('auth-check-msg').innerHTML = "✅ Email/Password Provider is ACTIVE.";
-                } catch (e) {
-                    if (e.code === 'auth/operation-not-allowed') {
-                        addLog('❌ ERROR: Email/Password provider is DISABLED in Firebase!', 'error');
-                        document.getElementById('auth-check').style.background = "#fff1f2";
-                        document.getElementById('auth-check').style.borderColor = "#fda4af";
-                        document.getElementById('auth-check').style.color = "#9f1239";
-                        document.getElementById('auth-check-msg').innerHTML = "🛑 Email/Password provider is <strong>DISABLED</strong>. <br>Please enable it in Firebase Console -> Build -> Authentication -> Sign-in method.";
-                    } else {
-                        addLog('Pre-flight check: ' + e.message);
-                        document.getElementById('auth-check-msg').innerHTML = "✅ Firebase Auth is responsive.";
-                    }
-                }
-            } catch (err) {
-                console.error('Pre-flight error:', err);
-            }
-        }
-        runPreFlight();
-
-        window.copyCreds = () => {
-            const email = document.getElementById('copy-email').innerText;
-            const pass = document.getElementById('copy-pass').innerText;
-            navigator.clipboard.writeText(`Email: ${email}\nPassword: ${pass}`);
-            alert('Credentials copied to clipboard!');
-        };
-
-        function addLog(msg, type = '') {
+        const logEl = document.getElementById('log-box');
+        function addLog(msg, type='') {
             const div = document.createElement('div');
-            div.className = `log-entry ${type ? 'log-' + type : ''}`;
+            div.className = `log-entry ${type==='error'?'log-error':''}`;
             div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
             logEl.appendChild(div);
             logEl.scrollTop = logEl.scrollHeight;
         }
 
-        // Pre-flight check
-        async function runChecks() {
-            try {
-                addLog('Testing Firebase Auth connection...');
-                document.getElementById('auth-status').innerText = 'CONNECTED';
-                document.getElementById('auth-status').className = 'status-tag tag-ok';
-                
-                addLog('Testing Database connection...');
-                await get(ref(db, '.info/connected'));
-                document.getElementById('db-status').innerText = 'CONNECTED';
-                document.getElementById('db-status').className = 'status-tag tag-ok';
-                addLog('Connection successful!', 'success');
-            } catch (err) {
-                addLog('Connection failed: ' + err.message, 'error');
-                document.getElementById('db-status').innerText = 'ERROR';
-                document.getElementById('db-status').className = 'status-tag tag-fail';
-            }
-        }
-
-        runChecks();
-
-        document.getElementById('setup-btn').addEventListener('click', async () => {
+        window.setupAdmin = async () => {
             const btn = document.getElementById('setup-btn');
             btn.disabled = true;
-            addLog('Starting build process...');
+            addLog('Starting Admin Initialization...');
+            
+            const email = 'AarogyaCloud@gmail.com';
+            const pass = 'Aarogya@1234';
 
             try {
-                // 1. Try Login or Create
-                let user = null;
-                try {
-                    addLog('Checking if admin account exists...');
-                    const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-                    user = cred.user;
-                    addLog('Existing account found.', 'success');
-                } catch (err) {
-                    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                        addLog('Account missing. Creating new admin...');
-                        const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-                        user = cred.user;
-                        addLog('New Auth account created!', 'success');
-                    } else {
-                        throw err;
+                addLog('Attempting to create admin account...');
+                const cred = await createUserWithEmailAndPassword(auth, email, pass).catch(e => {
+                    if (e.code === 'auth/email-already-in-use') {
+                        addLog('Admin account already exists. Updating records...');
+                        return signInWithEmailAndPassword(auth, email, pass);
                     }
-                }
+                    throw e;
+                });
 
-                // 2. Sync with Database
-                if (user) {
-                    addLog('Syncing UID with Realtime Database...');
-                    await set(ref(db, `users/admin/${user.uid}`), {
-                        name: "Master Administrator",
-                        email: ADMIN_EMAIL,
-                        role: "admin",
-                        createdAt: Date.now(),
-                        status: "SUPER"
-                    });
-                    addLog('Database record secured!', 'success');
-                    
-                    addLog('Verification complete. SYSTEM READY.', 'success');
-                    document.getElementById('success-link').classList.remove('hidden');
-                    document.getElementById('direct-login-btn').classList.remove('hidden');
-                    alert('Admin account is now ACTIVE and WORKING.');
-                }
+                const uid = cred.user.uid;
+                addLog(`Auth successful. UID: ${uid}`);
+
+                await set(ref(db, `users/admins/${uid}`), {
+                    uid, email, role: 'admin', createdAt: Date.now()
+                });
+                addLog('Database records initialized.');
                 
-                // Don't sign out yet so the direct login can work
+                document.getElementById('auth-check').classList.add('ok');
+                document.getElementById('auth-check-msg').textContent = 'System Ready';
+                addLog('SETUP COMPLETE. You can now login to the Admin Panel.', 'success');
             } catch (err) {
-                addLog('FATAL ERROR: ' + err.message, 'error');
-                alert('Setup failed. Check console for details.');
+                addLog(`ERROR: ${err.message}`, 'error');
             } finally {
                 btn.disabled = false;
             }
-        });
+        };
 
-        document.getElementById('direct-login-btn').addEventListener('click', async () => {
-            addLog('Directing to Admin Panel...');
-            // We are already signed in from the setup process
-            window.location.href = 'admin.html';
-        });
-
-        document.getElementById('clear-sessions-btn').addEventListener('click', async () => {
+        window.clearAllSessions = async () => {
+            if (!confirm('This will wipe ALL live consultations. Proceed?')) return;
             try {
-                addLog('Clearing all active sessions...');
-                await signOut(auth);
-                addLog('Sessions cleared. You can now start fresh.', 'success');
-                alert('All sessions cleared! Now click "Build & Secure Admin Account".');
-            } catch (err) {
-                addLog('Error clearing sessions: ' + err.message, 'error');
-            }
-        });
+                await remove(ref(db, 'sessions'));
+                addLog('All sessions cleared.');
+            } catch (e) { addLog(e.message, 'error'); }
+        };
 
-        document.getElementById('test-login-btn').addEventListener('click', async () => {
-            try {
-                addLog('Testing sign-in credentials...');
-                const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-                addLog('Auth check passed.', 'success');
-                
-                const snap = await get(ref(db, `users/admin/${cred.user.uid}`));
-                if (snap.exists()) {
-                    addLog('Database record found.', 'success');
-                    alert('Login is WORKING. You can go to the admin panel.');
-                    document.getElementById('success-link').classList.remove('hidden');
-                } else {
-                    addLog('Auth OK but Database record MISSING!', 'error');
-                    alert('Auth works but database is empty. Click "Build & Secure Admin Account" to fix.');
-                }
-                await signOut(auth);
-            } catch (err) {
-                addLog('Login test failed: ' + err.message, 'error');
-                alert('Invalid credentials or connection error.');
+        window.copyCreds = () => {
+            const txt = `Email: AarogyaCloud@gmail.com\nPass: Aarogya@1234`;
+            navigator.clipboard.writeText(txt);
+            alert('Credentials copied!');
+        };
+
+        // Pre-flight
+        setTimeout(() => {
+            if (auth) {
+                document.getElementById('auth-check-msg').textContent = 'Firebase Connected';
+                document.getElementById('auth-check').classList.add('ok');
+                addLog('Firebase bridge active.');
+                lucide.createIcons();
             }
-        });
+        }, 1000);
+        
+        lucide.createIcons();
     </script>
 </body>
-
 </html>

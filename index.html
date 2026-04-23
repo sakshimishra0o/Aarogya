@@ -6,6 +6,7 @@
 <title>Aarogya - Complete Medical Solutions</title>
 <meta name="description" content="Aarogya - Connect with certified doctors instantly. Secure, professional, and accessible healthcare.">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
 <style>
 :root {
     --primary: #3d6b81;
@@ -251,12 +252,12 @@ footer {
             
             <div class="portal-grid">
                 <a href="patient.html" class="portal-card">
-                    <div class="portal-icon">🧑‍⚕️</div>
+                    <div class="portal-icon"><i data-lucide="user"></i></div>
                     <h3>Patient Portal</h3>
                     <p>Book consultations & manage records</p>
                 </a>
                 <a href="doctor.html" class="portal-card">
-                    <div class="portal-icon">👨‍⚕️</div>
+                    <div class="portal-icon"><i data-lucide="stethoscope"></i></div>
                     <h3>Doctor Portal</h3>
                     <p>Consult patients & write prescriptions</p>
                 </a>
@@ -265,12 +266,15 @@ footer {
     </section>
 
     <div class="stats-bar">
-        <div class="stat-item"><div class="stat-num">99.9%</div><div class="stat-lbl">Uptime</div></div>
-        <div class="stat-item"><div class="stat-num">< 2s</div><div class="stat-lbl">Connect</div></div>
-        <div class="stat-item"><div class="stat-num">256-bit</div><div class="stat-lbl">Secure</div></div>
+        <div class="stat-item"><div class="stat-num">99.9%</div><div class="stat-lbl"><i data-lucide="activity" style="width:12px;height:12px;display:inline;margin-right:4px;"></i>Uptime</div></div>
+        <div class="stat-item"><div class="stat-num">< 2s</div><div class="stat-lbl"><i data-lucide="zap" style="width:12px;height:12px;display:inline;margin-right:4px;"></i>Connect</div></div>
+        <div class="stat-item"><div class="stat-num">256-bit</div><div class="stat-lbl"><i data-lucide="shield-check" style="width:12px;height:12px;display:inline;margin-right:4px;"></i>Secure</div></div>
     </div>
 
     <footer>© 2026 Aarogya Healthcare Platform • Powered by Firebase</footer>
 </div>
+<script>
+    lucide.createIcons();
+</script>
 </body>
 </html>

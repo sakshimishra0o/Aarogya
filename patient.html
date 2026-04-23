@@ -6,12 +6,11 @@
     <title>Aarogya - Patient Portal</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { --sidebar-w: 260px; }
         .page-body { padding: 2rem; }
-        .view-section { animation: fadeIn 0.3s ease; }
         .view-section.hidden { display: none; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
         .dashboard-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
         .welcome-card { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
@@ -35,6 +34,8 @@
 
         .avatar { width: 40px; height: 40px; border-radius: 12px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 
+        .nav-item i { width: 18px; height: 18px; margin-right: 0.75rem; }
+
         @media (max-width: 992px) {
             .dashboard-grid { grid-template-columns: 1fr; }
         }
@@ -49,38 +50,40 @@
 <body>
     <!-- Auth -->
     <div id="auth-container" class="auth-page">
-        <div class="auth-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">🏥</div>
-            <h1 style="text-align: center; color: var(--primary); margin-bottom: 0.5rem;">Patient Portal</h1>
-            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Join Aarogya Healthcare</p>
-            
-            <div class="auth-tabs" style="display:flex; background:#f1f5f9; padding:4px; border-radius:10px; margin-bottom:1.5rem;">
-                <button class="auth-tab active" onclick="showTab('login')" style="flex:1; padding:0.75rem; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Sign In</button>
-                <button class="auth-tab" onclick="showTab('register')" style="flex:1; padding:0.75rem; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Register</button>
-            </div>
-
-            <form id="login-form" class="auth-form active">
-                <div class="input-group"><label>Email</label><input type="email" id="login-email" required placeholder="patient@email.com"></div>
-                <div class="input-group"><label>Password</label><input type="password" id="login-password" required placeholder="••••••••"></div>
-                <button type="submit" class="btn btn-primary" style="width:100%">Sign In →</button>
-            </form>
-
-            <form id="register-form" class="auth-form" style="display:none;">
-                <div class="input-group"><label>Full Name</label><input type="text" id="reg-name" required></div>
-                <div class="input-group"><label>Email</label><input type="email" id="reg-email" required></div>
-                <div class="input-group"><label>Password</label><input type="password" id="reg-password" required minlength="6"></div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div class="input-group"><label>Age</label><input type="number" id="reg-age" required></div>
-                    <div class="input-group"><label>Blood Group</label>
-                        <select id="reg-blood" required>
-                            <option value="">Select</option>
-                            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-                            <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
-                        </select>
-                    </div>
+        <div class="container">
+            <div class="auth-card">
+                <div style="text-align: center; color: var(--primary); margin-bottom: 1rem;"><i data-lucide="hospital" style="width:48px;height:48px;margin:0 auto;"></i></div>
+                <h1 style="text-align: center; color: var(--primary); margin-bottom: 0.5rem;">Patient Portal</h1>
+                <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Join Aarogya Healthcare</p>
+                
+                <div class="auth-tabs" style="display:flex; background:#f1f5f9; padding:4px; border-radius:10px; margin-bottom:1.5rem;">
+                    <button class="auth-tab active" onclick="showTab('login')" style="flex:1; padding:0.75rem; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Sign In</button>
+                    <button class="auth-tab" onclick="showTab('register')" style="flex:1; padding:0.75rem; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Register</button>
                 </div>
-                <button type="submit" class="btn btn-accent" style="width:100%">Create Account</button>
-            </form>
+
+                <form id="login-form" class="auth-form active">
+                    <div class="input-group"><label>Email</label><input type="email" id="login-email" required placeholder="patient@email.com"></div>
+                    <div class="input-group"><label>Password</label><input type="password" id="login-password" required placeholder="••••••••"></div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">Sign In <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:8px;"></i></button>
+                </form>
+
+                <form id="register-form" class="auth-form" style="display:none;">
+                    <div class="input-group"><label>Full Name</label><input type="text" id="reg-name" required></div>
+                    <div class="input-group"><label>Email</label><input type="email" id="reg-email" required></div>
+                    <div class="input-group"><label>Password</label><input type="password" id="reg-password" required minlength="6"></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div class="input-group"><label>Age</label><input type="number" id="reg-age" required></div>
+                        <div class="input-group"><label>Blood Group</label>
+                            <select id="reg-blood" required>
+                                <option value="">Select</option>
+                                <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                                <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-accent" style="width:100%">Create Account</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -92,21 +95,21 @@
                     <div style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">A</div>
                     <span style="font-weight:700;">Aarogya</span>
                 </div>
-                <button id="close-sidebar" class="btn" style="background:transparent; color:white; min-height:auto; padding:0.5rem;">✕</button>
+                <button id="close-sidebar" class="btn" style="background:transparent; color:white; min-height:auto; padding:0.5rem;"><i data-lucide="x"></i></button>
             </div>
             <nav class="sidebar-nav">
-                <button class="nav-item active" data-section="dashboard">🏠 Dashboard</button>
-                <button class="nav-item" data-section="profile">👤 My Profile</button>
-                <button class="nav-item" data-section="history">📋 Medical History</button>
-                <button class="nav-item" data-section="reports">📁 My Reports</button>
-                <button id="logout-btn" class="nav-item logout">🚪 Logout</button>
+                <button class="nav-item active" data-section="dashboard"><i data-lucide="home"></i> Dashboard</button>
+                <button class="nav-item" data-section="profile"><i data-lucide="user"></i> My Profile</button>
+                <button class="nav-item" data-section="history"><i data-lucide="clipboard-list"></i> Medical History</button>
+                <button class="nav-item" data-section="reports"><i data-lucide="folder"></i> My Reports</button>
+                <button id="logout-btn" class="nav-item logout"><i data-lucide="log-out"></i> Logout</button>
             </nav>
         </aside>
 
         <div class="main-content">
             <header class="top-header">
                 <div style="display:flex; align-items:center; gap:1rem;">
-                    <button id="menu-toggle" class="btn" style="display:none; background:transparent; border:1px solid #e2e8f0; color:var(--text-main); min-height:auto; padding:0.5rem;">☰</button>
+                    <button id="menu-toggle" class="btn" style="display:none; background:transparent; border:1px solid #e2e8f0; color:var(--text-main); min-height:auto; padding:0.5rem;"><i data-lucide="menu"></i></button>
                     <div style="display:flex; align-items:center; gap:0.75rem;">
                         <div class="avatar">P</div>
                         <div>
@@ -122,9 +125,9 @@
                 <div id="dashboard-view" class="view-section">
                     <div class="dashboard-grid">
                         <div class="card welcome-card">
-                            <h2>Hello! 👋</h2>
+                            <h2>Hello! <i data-lucide="sparkles" style="width:20px;height:20px;display:inline;"></i></h2>
                             <p>Consult with top specialists and manage your health records in one place.</p>
-                            <button id="quick-consult-btn" class="btn" style="background:rgba(255,255,255,0.2); color:white; border:1px solid white;">🩺 Consult Now</button>
+                            <button id="quick-consult-btn" class="btn" style="background:rgba(255,255,255,0.2); color:white; border:1px solid white;"><i data-lucide="stethoscope" style="width:16px;height:16px;"></i> Consult Now</button>
                         </div>
                         <div class="card">
                             <h3>Vitals Overview</h3>
@@ -143,7 +146,7 @@
                 <!-- Profile -->
                 <div id="profile-view" class="view-section hidden">
                     <div class="card">
-                        <h3>👤 Profile Information</h3>
+                        <h3><i data-lucide="user" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Profile Information</h3>
                         <form id="profile-form">
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
                                 <div class="input-group"><label>Full Name</label><input type="text" id="p-name-input" required></div>
@@ -151,27 +154,27 @@
                                 <div class="input-group"><label>Gender</label><select id="p-gender-input"><option>Male</option><option>Female</option><option>Other</option></select></div>
                                 <div class="input-group"><label>Blood Group</label><select id="p-blood-input"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
                             </div>
-                            <button type="submit" id="save-profile-btn" class="btn btn-primary" style="margin-top:1rem;">💾 Save Changes</button>
+                            <button type="submit" id="save-profile-btn" class="btn btn-primary" style="margin-top:1rem;"><i data-lucide="save"></i> Save Changes</button>
                         </form>
                     </div>
                 </div>
 
                 <!-- History -->
                 <div id="history-view" class="view-section hidden">
-                    <div class="card"><h3>📋 Medical History</h3><div id="full-history-list"></div></div>
+                    <div class="card"><h3><i data-lucide="clipboard-list" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Medical History</h3><div id="full-history-list"></div></div>
                 </div>
 
                 <!-- Reports -->
                 <div id="reports-view" class="view-section hidden">
                     <div class="card">
-                        <h3>📤 Upload Report</h3>
+                        <h3><i data-lucide="upload" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Upload Report</h3>
                         <form id="upload-report-form">
                             <div class="input-group"><label>Description</label><input type="text" id="report-desc" required></div>
                             <div class="input-group"><label>File</label><input type="file" id="report-file" required></div>
                             <button type="submit" class="btn btn-primary">Upload</button>
                         </form>
                     </div>
-                    <div class="card"><h3>📁 My Reports</h3><div id="reports-list-container"></div></div>
+                    <div class="card"><h3><i data-lucide="folder" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> My Reports</h3><div id="reports-list-container"></div></div>
                 </div>
             </div>
         </div>
@@ -180,16 +183,16 @@
     <!-- Live Consultation Overlay -->
     <div id="consultation-area" class="consultation-overlay hidden">
         <header class="consult-header">
-            <button id="minimize-consult-btn" class="btn btn-outline" style="min-height:auto; padding:0.5rem 1rem;">← Back</button>
+            <button id="minimize-consult-btn" class="btn btn-outline" style="min-height:auto; padding:0.5rem 1rem;"><i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Back</button>
             <div class="doctor-badge">
                 <div class="avatar">D</div>
-                <div><div style="font-weight:700; color:var(--primary);" id="doctor-name-display">Doctor</div><span class="status-dot">🔴 Live</span></div>
+                <div><div style="font-weight:700; color:var(--primary);" id="doctor-name-display">Doctor</div><span class="status-dot"><i data-lucide="circle" style="width:8px;height:8px;display:inline;fill:currentColor;margin-right:4px;"></i> Live</span></div>
             </div>
         </header>
         <div class="page-body" style="max-width:1200px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
             <div>
                 <div class="card">
-                    <h3>📊 Vital Signs</h3>
+                    <h3><i data-lucide="activity" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Vital Signs</h3>
                     <form id="vitals-form" class="vitals-grid-form" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
                         <div class="input-group"><label>BP</label><input type="text" id="v-bp"></div>
                         <div class="input-group"><label>Temp</label><input type="text" id="v-temp"></div>
@@ -198,7 +201,7 @@
                     </form>
                 </div>
                 <div class="card">
-                    <h3>💬 Chat</h3>
+                    <h3><i data-lucide="message-square" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Chat</h3>
                     <div id="chat-messages" class="chat-box"></div>
                     <div style="display:flex; gap:0.5rem;">
                         <input type="text" id="chat-input" placeholder="Message doctor...">
@@ -212,10 +215,10 @@
                     <video id="local-video" autoplay playsinline muted class="local-video"></video>
                 </div>
                 <div style="display:flex; justify-content:center; gap:1rem; padding:1.5rem; background:rgba(0,0,0,0.1); border-radius:0 0 24px 24px;">
-                    <button id="toggle-video" class="btn-icon-round">📷</button>
-                    <button id="toggle-audio" class="btn-icon-round">🎙</button>
+                    <button id="toggle-video" class="btn-icon-round"><i data-lucide="camera"></i></button>
+                    <button id="toggle-audio" class="btn-icon-round"><i data-lucide="mic"></i></button>
                 </div>
-                <div id="doctor-disconnect-notice" class="notice hidden" style="background:#fee2e2; color:#991b1b; margin-top:1.5rem;">Doctor disconnected.</div>
+                <div id="doctor-disconnect-notice" class="notice hidden" style="background:#fee2e2; color:#991b1b; margin-top:1.5rem;"><i data-lucide="alert-triangle" style="width:16px;height:16px;display:inline;margin-right:8px;"></i> Doctor disconnected.</div>
             </div>
         </div>
     </div>
@@ -223,7 +226,7 @@
     <!-- Modals -->
     <div id="consult-modal" class="modal hidden">
         <div class="modal-content">
-            <h2 style="color:var(--primary);">🩺 New Consultation</h2>
+            <h2 style="color:var(--primary);"><i data-lucide="stethoscope" style="width:24px;height:24px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> New Consultation</h2>
             <textarea id="consult-symptoms" placeholder="How are you feeling today?"></textarea>
             <div class="modal-actions">
                 <button id="cancel-consult" class="btn btn-outline">Cancel</button>
@@ -234,7 +237,7 @@
 
     <div id="prescription-modal" class="modal hidden">
         <div class="modal-content">
-            <h2 style="color:var(--primary);">📋 Prescription</h2>
+            <h2 style="color:var(--primary);"><i data-lucide="clipboard-list" style="width:24px;height:24px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Prescription</h2>
             <div id="prescription-content" style="background:#f8fafc; padding:1.5rem; border-radius:16px; margin:1rem 0; white-space:pre-wrap;"></div>
             <button id="close-prescription-modal" class="btn btn-primary" style="width:100%">Close</button>
         </div>
@@ -253,6 +256,9 @@
                 document.getElementById('register-form').style.display = 'block';
             }
         }
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
     </script>
 </body>
 </html>
