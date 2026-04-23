@@ -182,7 +182,8 @@ function initMonitoring() {
     onValue(ref(db, 'users/patients'), snap => {
         const patients = snap.val() || {};
         renderPatients(patients);
-        document.getElementById('stat-patients').textContent = Object.keys(patients).length;
+        const statPatients = document.getElementById('stat-patients');
+        if (statPatients) statPatients.textContent = Object.keys(patients).length;
     });
 
     onValue(ref(db, 'sessions'), snap => {
@@ -197,8 +198,10 @@ function updateStats(doctors) {
     const all    = Object.values(doctors);
     const total  = all.length;
     const online = all.filter(d => d.status === 'ACTIVE' && !d.blocked && d.approved).length;
-    document.getElementById('stat-doctors').textContent = total;
-    document.getElementById('stat-online').textContent  = online;
+    const statDocs = document.getElementById('stat-doctors');
+    if (statDocs) statDocs.textContent = total;
+    const statOnline = document.getElementById('stat-online');
+    if (statOnline) statOnline.textContent  = online;
 }
 
 // ─── Render Doctors ───────────────────────────────────────────────────────────
@@ -279,7 +282,8 @@ function renderSessions(sessions, listId, recentOnly) {
     let active   = 0, emergency = 0;
 
     if (listId === 'session-list') {
-        document.getElementById('stat-total').textContent = total;
+        const elTotal = document.getElementById('stat-total');
+        if (elTotal) elTotal.textContent = total;
     }
 
     const sorted = Object.entries(sessions)
@@ -290,9 +294,10 @@ function renderSessions(sessions, listId, recentOnly) {
     if (!entries.length) {
         list.innerHTML = `<tr><td colspan="6" class="empty-td">No sessions recorded yet.</td></tr>`;
         if (listId === 'session-list') {
-            document.getElementById('stat-active')?.setAttribute('textContent', '0');
-            document.getElementById('stat-active').textContent    = 0;
-            document.getElementById('stat-emergency').textContent = 0;
+            const elActive = document.getElementById('stat-active');
+            if (elActive) elActive.textContent = 0;
+            const elEmergency = document.getElementById('stat-emergency');
+            if (elEmergency) elEmergency.textContent = 0;
         }
         return;
     }
@@ -318,8 +323,10 @@ function renderSessions(sessions, listId, recentOnly) {
     lucide.createIcons();
 
     if (listId === 'session-list') {
-        document.getElementById('stat-active').textContent    = active;
-        document.getElementById('stat-emergency').textContent = emergency;
+        const elActive = document.getElementById('stat-active');
+        if (elActive) elActive.textContent = active;
+        const elEmergency = document.getElementById('stat-emergency');
+        if (elEmergency) elEmergency.textContent = emergency;
     }
 }
 
