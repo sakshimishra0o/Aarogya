@@ -423,4 +423,9 @@ th, td {
     #page-title {
         font-size: 1.1rem !important;
     }
+    
+    /* Hide non-essential columns on mobile */
+    .hide-mobile {
+        display: none !important;
+    }
 }

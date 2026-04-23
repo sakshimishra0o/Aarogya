@@ -232,15 +232,15 @@ function renderDoctors(doctors) {
         actions += `<button class="btn btn-sm btn-danger" onclick="deleteDoc('${uid}')">Delete</button>`;
 
         return `<tr>
-            <td style="font-family:monospace;font-size:0.78rem;color:var(--primary);">${uid}</td>
+            <td class="hide-mobile" style="font-family:monospace;font-size:0.78rem;color:var(--primary);">${uid}</td>
             <td>
                 <strong>${esc(doc.name || 'N/A')}</strong><br>
                 <small style="color:#94a3b8">${esc(doc.specialty || 'General')}</small>
             </td>
-            <td style="font-size:0.82rem">${esc(doc.email || '-')}</td>
-            <td>${esc(doc.phone || '-')}</td>
+            <td class="hide-mobile" style="font-size:0.82rem">${esc(doc.email || '-')}</td>
+            <td class="hide-mobile">${esc(doc.phone || '-')}</td>
             <td><span class="status-indicator ${statusClass}">${statusText}</span></td>
-            <td><span style="color:${approved ? '#10b981' : '#f59e0b'};font-weight:600">${approved ? '<i data-lucide="check" style="width:12px;height:12px;display:inline;"></i> Approved' : '<i data-lucide="clock" style="width:12px;height:12px;display:inline;"></i> Pending'}</span></td>
+            <td class="hide-mobile"><span style="color:${approved ? '#10b981' : '#f59e0b'};font-weight:600">${approved ? '<i data-lucide="check" style="width:12px;height:12px;display:inline;"></i> Approved' : '<i data-lucide="clock" style="width:12px;height:12px;display:inline;"></i> Pending'}</span></td>
             <td class="actions-td">${actions}</td>
         </tr>`;
     }).join('');
