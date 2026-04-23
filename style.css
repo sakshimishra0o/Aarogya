@@ -235,6 +235,7 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     justify-content: center;
     padding: 2rem 1rem;
     background-color: var(--bg-main);
+    width: 100%;
 }
 
 .auth-card {
@@ -244,6 +245,7 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 440px;
+    margin: 0 auto; /* Ensure centering if parent is not flex */
     animation: fadeIn 0.5s ease-out;
 }
 
