@@ -1,353 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aarogya - Patient Portal</title>
-<link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--sidebar-w:250px}
-.app-layout{display:flex;min-height:100vh}
-.sidebar{width:var(--sidebar-w);background:linear-gradient(180deg,#1e1b4b,#312e81);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:200;transition:transform .3s}
-.sidebar-header{padding:1.25rem;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between}
-.logo-sm{width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem}
-.brand-sm{font-weight:700;font-size:1rem}
-.sidebar-nav{flex:1;padding:1rem .75rem;display:flex;flex-direction:column;gap:.25rem;overflow-y:auto}
-.nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:10px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:.875rem;font-weight:500;cursor:pointer;width:100%;text-align:left;transition:all .2s}
-.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
-.nav-item.active{background:rgba(255,255,255,.15);color:#fff;font-weight:600}
-.nav-item.logout{color:#fca5a5}
-.nav-item.logout:hover{background:rgba(239,68,68,.15)}
-.nav-sep{border:0;border-top:1px solid rgba(255,255,255,.08);margin:.5rem 0}
-.btn-icon{background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center}
-.main-content{margin-left:var(--sidebar-w);flex:1;background:#f5f3ff;min-height:100vh}
-.top-header{background:#fff;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100}
-.user-welcome{display:flex;align-items:center;gap:.75rem}
-.avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
-.btn-menu{background:none;border:1px solid #e2e8f0;border-radius:8px;padding:.5rem;cursor:pointer;display:none;font-size:1rem}
-.page-body{padding:1.5rem}
-.view-section.hidden{display:none}
-.view-section{animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
-.card{background:#fff;border-radius:14px;padding:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #f1f5f9;margin-bottom:1rem}
-.card h3{font-size:1rem;font-weight:700;margin-bottom:1rem}
-.welcome-card{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;grid-column:1}
-.welcome-card h2{font-size:1.25rem;font-weight:700;margin-bottom:.5rem}
-.welcome-card p{opacity:.8;font-size:.875rem;margin-bottom:1rem}
-.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
-.info-item label{display:block;font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem}
-.info-item span{font-weight:700;font-size:1.1rem;color:#0f172a}
-.btn{padding:.7rem 1.25rem;border-radius:10px;border:none;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;font-size:.875rem;min-height:42px}
-.btn-primary{background:#4f46e5;color:#fff}.btn-primary:hover{background:#3730a3}
-.btn-accent{background:#10b981;color:#fff}.btn-accent:hover{background:#059669}
-.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
-.btn-warning{background:#f59e0b;color:#fff}
-.btn-outline{background:transparent;border:2px solid #e2e8f0;color:#475569}.btn-outline:hover{border-color:#4f46e5;color:#4f46e5}
-.btn-sm{padding:.4rem .75rem;font-size:.78rem;min-height:32px}
-.btn-large{padding:1rem 1.5rem;font-size:1rem;min-height:52px}
-.btn:disabled{opacity:.55;cursor:not-allowed}
-.btn-icon-round{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all .2s}
-.btn-icon-round:hover{background:rgba(255,255,255,.25)}
-.btn-icon-round.off{background:rgba(239,68,68,.4)}
-.history-card{background:#fff;border-radius:12px;padding:1rem;margin-bottom:.75rem;border:1px solid #f1f5f9;cursor:pointer;transition:all .2s}
-.history-card:hover{border-color:#4f46e5;box-shadow:0 4px 12px rgba(79,70,229,.1)}
-.history-card.emergency{border-left:4px solid #ef4444}
-.history-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
-.badge-success{background:#d1fae5;color:#065f46;padding:.2rem .6rem;border-radius:6px;font-size:.72rem;font-weight:700;display:inline-block;margin-right:.4rem}
-.badge-danger{background:#fee2e2;color:#991b1b;padding:.2rem .6rem;border-radius:6px;font-size:.72rem;font-weight:700;display:inline-block}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.full-width{grid-column:1/-1}
-.input-group{margin-bottom:1rem}
-.input-group label{display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:.4rem}
-.input-group input,.input-group select,.input-group textarea{width:100%;padding:.75rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.95rem;transition:border-color .2s;background:#fff}
-.input-group input:focus,.input-group select:focus,.input-group textarea:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
-.consultation-overlay{position:fixed;inset:0;background:#f5f3ff;z-index:300;overflow-y:auto}
-.consult-header{background:#fff;padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:10}
-.doctor-badge{display:flex;align-items:center;gap:.75rem}
-.status-dot{background:#d1fae5;color:#065f46;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700}
-.consultation-content{max-width:1100px;margin:0 auto;padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.vitals-grid-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1rem}
-.vitals-grid-form .input-group{margin-bottom:0}
-.chat-messages{height:220px;overflow-y:auto;background:#f8fafc;border-radius:10px;padding:.75rem;margin-bottom:.75rem;display:flex;flex-direction:column;gap:.5rem}
-.chat-input{display:flex;gap:.5rem}
-.chat-input input{flex:1;padding:.75rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem}
-.chat-input input:focus{outline:none;border-color:#4f46e5}
-.msg{padding:.5rem .875rem;border-radius:12px;max-width:80%;font-size:.875rem}
-.msg-p{background:#4f46e5;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
-.msg-d{background:#fff;color:#374151;align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
-.video-feed-container{position:relative;background:#0f172a;border-radius:14px;min-height:220px;overflow:hidden}
-.remote-video{width:100%;height:220px;object-fit:cover;display:block}
-.local-video{position:absolute;bottom:.75rem;right:.75rem;width:100px;height:75px;object-fit:cover;border-radius:8px;border:2px solid rgba(255,255,255,.3)}
-.placeholder-video{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:.75rem}
-.placeholder-video p{opacity:.6;font-size:.875rem}
-.video-controls{display:flex;justify-content:center;gap:1rem;padding:.875rem;background:rgba(0,0,0,.3)}
-.disconnect-notice{background:#fef3c7;color:#92400e;padding:.875rem 1rem;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:1rem;font-size:.875rem;margin-top:1rem}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem;backdrop-filter:blur(4px)}
-.modal-content{background:#fff;border-radius:20px;padding:2rem;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.2)}
-.modal-content h2{margin-bottom:1rem;font-size:1.25rem}
-.modal-content textarea{width:100%;min-height:120px;padding:.875rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.9rem;resize:vertical;margin-bottom:1rem}
-.modal-content textarea:focus{outline:none;border-color:#4f46e5}
-.modal-actions{display:flex;gap:.75rem}
-.modal-actions .btn{flex:1}
-.prescription-box{background:#f8fafc;border-radius:10px;padding:1rem;white-space:pre-wrap;font-size:.875rem;color:#374151;border:1px solid #f1f5f9;min-height:80px;margin:.75rem 0}
-.hidden{display:none!important}
-.auth-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e1b4b,#312e81,#4c1d95);padding:2rem 1rem;gap:1rem}
-.auth-logo{width:70px;height:70px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:2rem;border:1px solid rgba(255,255,255,.2)}
-.auth-brand-name{color:#fff;font-size:1.75rem;font-weight:800}
-.auth-brand-sub{color:rgba(255,255,255,.6);font-size:.875rem}
-.auth-card{background:#fff;border-radius:20px;padding:2rem;width:100%;max-width:420px;box-shadow:0 25px 60px rgba(0,0,0,.3)}
-.auth-card h1{font-size:1.35rem;font-weight:700;margin-bottom:.5rem}
-.auth-card p{color:#64748b;font-size:.875rem;margin-bottom:1.25rem}
-.auth-tabs{display:flex;background:#f1f5f9;border-radius:10px;padding:4px;margin-bottom:1.25rem;gap:4px}
-.auth-tab{flex:1;padding:.625rem;border:none;background:transparent;font-weight:600;font-size:.875rem;color:#64748b;cursor:pointer;border-radius:8px;transition:all .2s}
-.auth-tab.active{background:#fff;color:#4f46e5;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.auth-form{display:none}
-.auth-form.active{display:block}
-@media(max-width:767px){
-.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:0 0 40px rgba(0,0,0,.4)}
-.main-content{margin-left:0}.btn-menu{display:flex}
-.dashboard-grid{grid-template-columns:1fr}.welcome-card{grid-column:1}
-.consultation-content{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}
-.info-grid{grid-template-columns:1fr 1fr}.page-body{padding:1rem}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aarogya - Patient Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --sidebar-w: 260px; }
+        .page-body { padding: 2rem; }
+        .view-section { animation: fadeIn 0.3s ease; }
+        .view-section.hidden { display: none; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+        .welcome-card { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
+        .welcome-card h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .welcome-card p { opacity: 0.9; margin-bottom: 1.5rem; }
+
+        .consultation-overlay { position: fixed; inset: 0; background: var(--bg-main); z-index: 300; overflow-y: auto; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .consult-header { background: white; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(61, 107, 129, 0.1); position: sticky; top: 0; z-index: 10; }
+        .doctor-badge { display: flex; align-items: center; gap: 1rem; }
+        .status-dot { background: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+
+        .video-feed-container { position: relative; background: #0f172a; min-height: 280px; border-radius: var(--radius); overflow: hidden; }
+        .remote-video { width: 100%; height: 280px; object-fit: cover; }
+        .local-video { position: absolute; bottom: 1rem; right: 1rem; width: 100px; height: 75px; object-fit: cover; border-radius: 10px; border: 2px solid rgba(255,255,255,0.3); }
+
+        .btn-icon-round { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.15); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.2s; }
+        .btn-icon-round:hover { background: rgba(255,255,255,0.25); }
+        .btn-icon-round.off { background: var(--danger); }
+
+        .avatar { width: 40px; height: 40px; border-radius: 12px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+        @media (max-width: 992px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .page-body { padding: 1rem; }
+        }
+    </style>
 </head>
 <body>
-<!-- Auth -->
-<div id="auth-container" class="auth-page">
-  <div class="auth-logo">🏥</div>
-  <div class="auth-brand-name">Patient Portal</div>
-  <div class="auth-brand-sub">Aarogya Healthcare Platform</div>
-  <div class="auth-card">
-    <h1>Welcome!</h1>
-    <p>Sign in or register to access your healthcare dashboard</p>
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="showTab('login')">Sign In</button>
-      <button class="auth-tab" onclick="showTab('register')">Register</button>
-    </div>
-    <form id="login-form" class="auth-form active">
-      <div class="input-group"><label>Email</label><input type="email" id="login-email" required placeholder="patient@email.com" autocomplete="username"></div>
-      <div class="input-group"><label>Password</label><input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password"></div>
-      <button type="submit" class="btn btn-primary" style="width:100%">Sign In →</button>
-    </form>
-    <form id="register-form" class="auth-form">
-      <div class="input-group"><label>Full Name</label><input type="text" id="reg-name" required placeholder="Your full name"></div>
-      <div class="input-group"><label>Email</label><input type="email" id="reg-email" required placeholder="patient@email.com"></div>
-      <div class="input-group"><label>Password</label><input type="password" id="reg-password" required placeholder="Min 6 characters" minlength="6"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-        <div class="input-group"><label>Age</label><input type="number" id="reg-age" required placeholder="25" min="1" max="120"></div>
-        <div class="input-group"><label>Blood Group</label>
-          <select id="reg-blood" required>
-            <option value="">Select</option>
-            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-            <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
-          </select>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-accent" style="width:100%">Create Account →</button>
-    </form>
-  </div>
-</div>
-
-<!-- Main Panel -->
-<div id="main-panel" class="app-layout hidden">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div style="display:flex;align-items:center;gap:.6rem"><div class="logo-sm">A</div><span class="brand-sm">Aarogya</span></div>
-      <button id="close-sidebar" class="btn-icon">✕</button>
-    </div>
-    <nav class="sidebar-nav">
-      <button class="nav-item active" data-section="dashboard">🏠 Dashboard</button>
-      <button class="nav-item" data-section="profile">👤 My Profile</button>
-      <button class="nav-item" data-section="history">📋 Medical History</button>
-      <button class="nav-item" data-section="reports">📁 My Reports</button>
-      <hr class="nav-sep">
-      <button id="logout-btn" class="nav-item logout">🚪 Logout</button>
-    </nav>
-  </aside>
-
-  <div class="main-content">
-    <header class="top-header">
-      <div style="display:flex;align-items:center;gap:.75rem">
-        <button id="menu-toggle" class="btn-menu">☰</button>
-        <div class="user-welcome">
-          <div class="avatar">P</div>
-          <div>
-            <div style="font-weight:700;font-size:.95rem" id="patient-name">Loading...</div>
-            <div style="font-size:.72rem;color:#94a3b8" id="patient-id">ID: --</div>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="page-body">
-      <!-- Dashboard -->
-      <div id="dashboard-view" class="view-section">
-        <div class="dashboard-grid">
-          <div class="card welcome-card">
-            <h2>Welcome back! 👋</h2>
-            <p>Track your health and consult with top doctors instantly.</p>
-            <button id="quick-consult-btn" class="btn" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)">🩺 Consult Doctor Now</button>
-          </div>
-          <div class="card">
-            <h3>Vitals Overview</h3>
-            <div class="info-grid">
-              <div class="info-item"><label>Age</label><span id="dash-age">--</span></div>
-              <div class="info-item"><label>Blood</label><span id="dash-blood">--</span></div>
-              <div class="info-item"><label>Weight</label><span id="dash-weight">--</span></div>
+    <!-- Auth -->
+    <div id="auth-container" class="auth-page">
+        <div class="auth-card">
+            <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">🏥</div>
+            <h1 style="text-align: center; color: var(--primary); margin-bottom: 0.5rem;">Patient Portal</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Join Aarogya Healthcare</p>
+            
+            <div class="auth-tabs" style="display:flex; background:#f1f5f9; padding:4px; border-radius:10px; margin-bottom:1.5rem;">
+                <button class="auth-tab active" onclick="showTab('login')" style="flex:1; padding:0.75rem; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Sign In</button>
+                <button class="auth-tab" onclick="showTab('register')" style="flex:1; padding:0.75rem; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Register</button>
             </div>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Recent Consultations</h3>
-          <div id="patient-history-list"><p style="color:#94a3b8;font-size:.875rem">No consultations yet.</p></div>
-        </div>
-        <div class="card">
-          <h3>Recent Reports</h3>
-          <div id="dashboard-reports-list"><p style="color:#94a3b8;font-size:.875rem">No recent reports.</p></div>
-        </div>
-      </div>
 
-      <!-- Profile -->
-      <div id="profile-view" class="view-section hidden">
-        <div class="card">
-          <h3>👤 Edit Profile</h3>
-          <form id="profile-form">
-            <div class="form-grid">
-              <div class="input-group"><label>Full Name</label><input type="text" id="p-name-input" required></div>
-              <div class="input-group"><label>Age</label><input type="number" id="p-age-input"></div>
-              <div class="input-group"><label>Gender</label><select id="p-gender-input"><option>Male</option><option>Female</option><option>Other</option></select></div>
-              <div class="input-group"><label>Blood Group</label><select id="p-blood-input"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
-              <div class="input-group"><label>Height (cm)</label><input type="number" id="p-height-input"></div>
-              <div class="input-group"><label>Weight (kg)</label><input type="number" id="p-weight-input"></div>
-              <div class="input-group full-width"><label>Address</label><textarea id="p-address-input" rows="2"></textarea></div>
-              <div class="input-group full-width"><label>Medical History / Allergies</label><textarea id="p-medical-input" rows="3" placeholder="e.g. Diabetes, Hypertension, Penicillin allergy..."></textarea></div>
+            <form id="login-form" class="auth-form active">
+                <div class="input-group"><label>Email</label><input type="email" id="login-email" required placeholder="patient@email.com"></div>
+                <div class="input-group"><label>Password</label><input type="password" id="login-password" required placeholder="••••••••"></div>
+                <button type="submit" class="btn btn-primary" style="width:100%">Sign In →</button>
+            </form>
+
+            <form id="register-form" class="auth-form" style="display:none;">
+                <div class="input-group"><label>Full Name</label><input type="text" id="reg-name" required></div>
+                <div class="input-group"><label>Email</label><input type="email" id="reg-email" required></div>
+                <div class="input-group"><label>Password</label><input type="password" id="reg-password" required minlength="6"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div class="input-group"><label>Age</label><input type="number" id="reg-age" required></div>
+                    <div class="input-group"><label>Blood Group</label>
+                        <select id="reg-blood" required>
+                            <option value="">Select</option>
+                            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                            <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-accent" style="width:100%">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div id="main-panel" class="app-layout hidden">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">A</div>
+                    <span style="font-weight:700;">Aarogya</span>
+                </div>
+                <button id="close-sidebar" class="btn" style="background:transparent; color:white; min-height:auto; padding:0.5rem;">✕</button>
             </div>
-            <button type="submit" id="save-profile-btn" class="btn btn-primary">💾 Save Changes</button>
-          </form>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="dashboard">🏠 Dashboard</button>
+                <button class="nav-item" data-section="profile">👤 My Profile</button>
+                <button class="nav-item" data-section="history">📋 Medical History</button>
+                <button class="nav-item" data-section="reports">📁 My Reports</button>
+                <button id="logout-btn" class="nav-item logout">🚪 Logout</button>
+            </nav>
+        </aside>
+
+        <div class="main-content">
+            <header class="top-header">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <button id="menu-toggle" class="btn" style="display:none; background:transparent; border:1px solid #e2e8f0; color:var(--text-main); min-height:auto; padding:0.5rem;">☰</button>
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <div class="avatar">P</div>
+                        <div>
+                            <div style="font-weight:700; font-size:0.95rem;" id="patient-name">Loading...</div>
+                            <span id="patient-id" style="font-size:0.72rem; color:var(--text-muted);">ID: --</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-body">
+                <!-- Dashboard -->
+                <div id="dashboard-view" class="view-section">
+                    <div class="dashboard-grid">
+                        <div class="card welcome-card">
+                            <h2>Hello! 👋</h2>
+                            <p>Consult with top specialists and manage your health records in one place.</p>
+                            <button id="quick-consult-btn" class="btn" style="background:rgba(255,255,255,0.2); color:white; border:1px solid white;">🩺 Consult Now</button>
+                        </div>
+                        <div class="card">
+                            <h3>Vitals Overview</h3>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                <div class="input-group"><label>Age</label><div id="dash-age" style="font-weight:600;">--</div></div>
+                                <div class="input-group"><label>Blood</label><div id="dash-blood" style="font-weight:600;">--</div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Recent Consultations</h3>
+                        <div id="patient-history-list"></div>
+                    </div>
+                </div>
+
+                <!-- Profile -->
+                <div id="profile-view" class="view-section hidden">
+                    <div class="card">
+                        <h3>👤 Profile Information</h3>
+                        <form id="profile-form">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+                                <div class="input-group"><label>Full Name</label><input type="text" id="p-name-input" required></div>
+                                <div class="input-group"><label>Age</label><input type="number" id="p-age-input"></div>
+                                <div class="input-group"><label>Gender</label><select id="p-gender-input"><option>Male</option><option>Female</option><option>Other</option></select></div>
+                                <div class="input-group"><label>Blood Group</label><select id="p-blood-input"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                            </div>
+                            <button type="submit" id="save-profile-btn" class="btn btn-primary" style="margin-top:1rem;">💾 Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div id="history-view" class="view-section hidden">
+                    <div class="card"><h3>📋 Medical History</h3><div id="full-history-list"></div></div>
+                </div>
+
+                <!-- Reports -->
+                <div id="reports-view" class="view-section hidden">
+                    <div class="card">
+                        <h3>📤 Upload Report</h3>
+                        <form id="upload-report-form">
+                            <div class="input-group"><label>Description</label><input type="text" id="report-desc" required></div>
+                            <div class="input-group"><label>File</label><input type="file" id="report-file" required></div>
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </form>
+                    </div>
+                    <div class="card"><h3>📁 My Reports</h3><div id="reports-list-container"></div></div>
+                </div>
+            </div>
         </div>
-      </div>
+    </div>
 
-      <!-- History -->
-      <div id="history-view" class="view-section hidden">
-        <div class="card"><h3>📋 Medical History</h3><div id="full-history-list"><p style="color:#94a3b8">No consultations yet.</p></div></div>
-      </div>
-
-      <!-- Reports -->
-      <div id="reports-view" class="view-section hidden">
-        <div class="card">
-          <h3>📤 Upload Report</h3>
-          <form id="upload-report-form">
-            <div class="input-group"><label>Description</label><input type="text" id="report-desc" required placeholder="e.g. Blood Test - April 2026"></div>
-            <div class="input-group"><label>File (PDF, JPG, PNG — Max 5MB)</label><input type="file" id="report-file" accept=".pdf,.jpg,.jpeg,.png" required></div>
-            <button type="submit" class="btn btn-primary">⬆️ Upload Report</button>
-          </form>
+    <!-- Live Consultation Overlay -->
+    <div id="consultation-area" class="consultation-overlay hidden">
+        <header class="consult-header">
+            <button id="minimize-consult-btn" class="btn btn-outline" style="min-height:auto; padding:0.5rem 1rem;">← Back</button>
+            <div class="doctor-badge">
+                <div class="avatar">D</div>
+                <div><div style="font-weight:700; color:var(--primary);" id="doctor-name-display">Doctor</div><span class="status-dot">🔴 Live</span></div>
+            </div>
+        </header>
+        <div class="page-body" style="max-width:1200px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+            <div>
+                <div class="card">
+                    <h3>📊 Vital Signs</h3>
+                    <form id="vitals-form" class="vitals-grid-form" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div class="input-group"><label>BP</label><input type="text" id="v-bp"></div>
+                        <div class="input-group"><label>Temp</label><input type="text" id="v-temp"></div>
+                        <div class="input-group"><label>Sugar</label><input type="text" id="v-sugar"></div>
+                        <div class="input-group"><label>Pulse</label><input type="text" id="v-pulse"></div>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>💬 Chat</h3>
+                    <div id="chat-messages" class="chat-box"></div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="text" id="chat-input" placeholder="Message doctor...">
+                        <button id="send-btn" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="video-feed-container">
+                    <video id="remote-video" autoplay playsinline class="remote-video"></video>
+                    <video id="local-video" autoplay playsinline muted class="local-video"></video>
+                </div>
+                <div style="display:flex; justify-content:center; gap:1rem; padding:1.5rem; background:rgba(0,0,0,0.1); border-radius:0 0 24px 24px;">
+                    <button id="toggle-video" class="btn-icon-round">📷</button>
+                    <button id="toggle-audio" class="btn-icon-round">🎙</button>
+                </div>
+                <div id="doctor-disconnect-notice" class="notice hidden" style="background:#fee2e2; color:#991b1b; margin-top:1.5rem;">Doctor disconnected.</div>
+            </div>
         </div>
-        <div class="card"><h3>📁 Uploaded Reports</h3><div id="reports-list-container"><p style="color:#94a3b8">No reports uploaded yet.</p></div></div>
-      </div>
     </div>
-  </div>
-</div>
 
-<!-- Live Consultation Overlay -->
-<div id="consultation-area" class="consultation-overlay hidden">
-  <header class="consult-header">
-    <button id="minimize-consult-btn" class="btn btn-outline btn-sm">← Back</button>
-    <div class="doctor-badge">
-      <div class="avatar">D</div>
-      <div><div style="font-weight:700" id="doctor-name-display">Connecting...</div><span class="status-dot">🔴 Live</span></div>
-    </div>
-  </header>
-  <div class="consultation-content">
-    <div>
-      <div class="card">
-        <h3>📊 Live Vitals</h3>
-        <p style="color:#64748b;font-size:.8rem;margin-bottom:.75rem">Shared with doctor in real-time — values auto-sync as you type</p>
-        <form id="vitals-form" class="vitals-grid-form">
-          <div class="input-group"><label>BP (mmHg)</label><input type="text" id="v-bp" placeholder="120/80"></div>
-          <div class="input-group"><label>Temp (°F)</label><input type="text" id="v-temp" placeholder="98.6"></div>
-          <div class="input-group"><label>Sugar (mg/dL)</label><input type="text" id="v-sugar" placeholder="100"></div>
-          <div class="input-group"><label>SpO2 (%)</label><input type="text" id="v-spo2" placeholder="98"></div>
-          <div class="input-group"><label>Pulse (bpm)</label><input type="text" id="v-pulse" placeholder="72"></div>
-          <div class="input-group"><label>Heart Rate</label><input type="text" id="v-heartrate" placeholder="75"></div>
-        </form>
-        <button type="submit" form="vitals-form" class="btn btn-accent" style="width:100%">📡 Update Vitals</button>
-        <p id="vitals-sync-status" style="font-size:.75rem;color:#94a3b8;margin-top:.5rem;text-align:right"></p>
-      </div>
-      <div class="card">
-        <div style="font-weight:700;margin-bottom:.75rem">💬 Chat with Doctor</div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-input">
-          <input type="text" id="chat-input" placeholder="Type a message...">
-          <button id="send-btn" class="btn btn-primary">Send</button>
+    <!-- Modals -->
+    <div id="consult-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="color:var(--primary);">🩺 New Consultation</h2>
+            <textarea id="consult-symptoms" placeholder="How are you feeling today?"></textarea>
+            <div class="modal-actions">
+                <button id="cancel-consult" class="btn btn-outline">Cancel</button>
+                <button id="confirm-consult" class="btn btn-primary">Find Doctor</button>
+            </div>
         </div>
-      </div>
-      <div class="card" style="background:#fff1f2;border:1px solid #fecdd3">
-        <button onclick="flagEmergency()" class="btn btn-danger" style="width:100%">⚠️ FLAG EMERGENCY</button>
-      </div>
     </div>
-    <div>
-      <div class="card" style="background:#0f172a;padding:0;overflow:hidden">
-        <div class="video-feed-container">
-          <video id="remote-video" autoplay playsinline class="remote-video"></video>
-          <video id="local-video" autoplay playsinline muted class="local-video"></video>
-          <div id="video-placeholder" class="placeholder-video">
-            <div style="font-size:3rem">📹</div>
-            <p>Starting Video...</p>
-          </div>
+
+    <div id="prescription-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="color:var(--primary);">📋 Prescription</h2>
+            <div id="prescription-content" style="background:#f8fafc; padding:1.5rem; border-radius:16px; margin:1rem 0; white-space:pre-wrap;"></div>
+            <button id="close-prescription-modal" class="btn btn-primary" style="width:100%">Close</button>
         </div>
-        <div class="video-controls">
-          <button id="toggle-video" class="btn-icon-round" title="Toggle Camera">📷</button>
-          <button id="toggle-audio" class="btn-icon-round" title="Toggle Mic">🎙</button>
-        </div>
-      </div>
-      <div id="doctor-disconnect-notice" class="disconnect-notice hidden">
-        ⚠ Doctor disconnected!
-        <button id="find-new-doctor-btn" class="btn btn-primary btn-sm">Find New Doctor</button>
-      </div>
     </div>
-  </div>
-</div>
 
-<!-- Consult Modal -->
-<div id="consult-modal" class="modal hidden">
-  <div class="modal-content">
-    <h2>🩺 Start Consultation</h2>
-    <p style="color:#64748b;font-size:.875rem;margin-bottom:1rem">Describe your symptoms to help the doctor prepare.</p>
-    <textarea id="consult-symptoms" placeholder="e.g. Headache and fever for 2 days, sore throat..."></textarea>
-    <div class="modal-actions">
-      <button id="cancel-consult" class="btn btn-outline">Cancel</button>
-      <button id="confirm-consult" class="btn btn-primary">🔍 Find Doctor</button>
-    </div>
-  </div>
-</div>
-
-<!-- Prescription Modal -->
-<div id="prescription-modal" class="modal hidden">
-  <div class="modal-content">
-    <h2>📋 Prescription</h2>
-    <p><strong>Doctor:</strong> <span id="rx-doctor">--</span></p>
-    <p><strong>Date:</strong> <span id="rx-date">--</span></p>
-    <div id="prescription-content" class="prescription-box"></div>
-    <button id="close-prescription-modal" class="btn btn-primary" style="width:100%">Close</button>
-  </div>
-</div>
-
-<script type="module" src="./scripts/patient.js"></script>
-<script>
-function showTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-  if (tab === 'login') {
-    document.querySelector('.auth-tab:first-child').classList.add('active');
-    document.getElementById('login-form').classList.add('active');
-  } else {
-    document.querySelector('.auth-tab:last-child').classList.add('active');
-    document.getElementById('register-form').classList.add('active');
-  }
-}
-</script>
+    <script type="module" src="./scripts/patient.js"></script>
+    <script>
+        window.showTab = function(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.style.display = 'none');
+            if (tab === 'login') {
+                document.querySelector('.auth-tab:first-child').classList.add('active');
+                document.getElementById('login-form').style.display = 'block';
+            } else {
+                document.querySelector('.auth-tab:last-child').classList.add('active');
+                document.getElementById('register-form').style.display = 'block';
+            }
+        }
+    </script>
 </body>
 </html>
