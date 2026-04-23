@@ -148,14 +148,14 @@ document.getElementById('add-doctor-form')?.addEventListener('submit', async (e)
             experience,
             hospital,
             role: 'doctor',
-            approved: false,
+            approved: true,
             blocked: false,
             status: 'INACTIVE',
             busy: false,
             createdAt: Date.now()
         });
 
-        showToast('<i data-lucide="check-circle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:middle;"></i> Dr. ' + name + ' registered successfully! They can now log in after approval.', 'success');
+        showToast('<i data-lucide="check-circle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:middle;"></i> Dr. ' + name + ' registered successfully! They can now log in immediately.', 'success');
         document.getElementById('doctor-modal')?.classList.add('hidden');
         document.getElementById('add-doctor-form')?.reset();
 
