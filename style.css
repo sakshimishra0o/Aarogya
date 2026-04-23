@@ -269,6 +269,18 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     display: block;
 }
 
+.auth-tab {
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.auth-tab.active {
+    background: var(--white) !important;
+    color: var(--primary) !important;
+    box-shadow: var(--shadow-sm);
+}
+
 /* Common Container */
 .container {
     width: 100%;
