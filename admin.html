@@ -73,7 +73,7 @@
                 <button class="nav-item" data-section="patients"><i data-lucide="users"></i> Patients</button>
                 <button class="nav-item" data-section="sessions"><i data-lucide="video"></i> Sessions</button>
                 <button class="nav-item" data-section="reports"><i data-lucide="file-text"></i> Reports</button>
-                <button id="logout-btn" class="nav-item logout"><i data-lucide="log-out"></i> Logout</button>
+                <!-- Logout moved to top header -->
             </nav>
         </aside>
 
@@ -83,7 +83,10 @@
                     <button id="menu-toggle" class="btn" style="display:none; background:transparent; border:1px solid #e2e8f0; color:var(--text-main); min-height:auto; padding:0.5rem;"><i data-lucide="menu"></i></button>
                     <h2 style="font-size:1.25rem; font-weight:800; color:var(--primary);" id="page-title">Management Dashboard</h2>
                 </div>
-                <img src="image/AAROGYA.PNG" alt="Logo" style="width:36px; height:36px; border-radius:8px; object-fit:contain;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <img src="image/AAROGYA.PNG" alt="Logo" style="width:36px; height:36px; border-radius:8px; object-fit:contain;">
+                    <button id="logout-btn" class="btn btn-outline" style="min-height:auto; padding:0.5rem 1rem; color:var(--danger); border-color:var(--danger);"><i data-lucide="log-out" style="width:16px;height:16px;"></i></button>
+                </div>
             </header>
 
             <div class="page-body">

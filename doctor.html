@@ -84,7 +84,7 @@
                 <button class="nav-item" data-section="profile"><i data-lucide="user"></i> My Profile</button>
                 <button class="nav-item" data-section="history"><i data-lucide="clipboard-list"></i> All Consultations</button>
                 <button class="nav-item" data-section="patients"><i data-lucide="users"></i> All Patients</button>
-                <button id="logout-btn" class="nav-item logout"><i data-lucide="log-out"></i> Logout</button>
+                <!-- Logout moved to top header -->
             </nav>
         </aside>
 
@@ -100,7 +100,10 @@
                         </div>
                     </div>
                 </div>
-                <span id="live-status" class="status-indicator status-offline">OFFLINE</span>
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <span id="live-status" class="status-indicator status-offline">OFFLINE</span>
+                    <button id="logout-btn" class="btn btn-outline" style="min-height:auto; padding:0.5rem 1rem; color:var(--danger); border-color:var(--danger);"><i data-lucide="log-out" style="width:16px;height:16px;"></i></button>
+                </div>
             </header>
 
             <div class="page-body">
