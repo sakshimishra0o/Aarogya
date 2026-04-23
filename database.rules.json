@@ -6,6 +6,9 @@
       "admins": {
         ".read": "auth != null"
       },
+      "admin": {
+        ".read": "auth != null"
+      },
       "doctors": {
         ".read": "auth != null",
         "$uid": {
