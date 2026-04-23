@@ -71,7 +71,7 @@ document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
 function switchSection(name) {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     document.querySelector(`.nav-item[data-section="${name}"]`)?.classList.add('active');
-    document.querySelectorAll('.admin-section-view').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(`section-${name}`)?.classList.remove('hidden');
 
     const titles = {
