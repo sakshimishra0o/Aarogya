@@ -210,7 +210,7 @@ function renderDoctors(doctors) {
     if (!list) return;
     const entries = Object.entries(doctors);
     if (!entries.length) {
-        list.innerHTML = `<tr><td colspan="6" class="empty-td">No doctors registered yet. Click "+ Add Doctor" to get started.</td></tr>`;
+        list.innerHTML = `<tr><td colspan="7" class="empty-td">No doctors registered yet. Click "+ Add Doctor" to get started.</td></tr>`;
         return;
     }
     list.innerHTML = entries.map(([uid, doc]) => {
@@ -232,6 +232,7 @@ function renderDoctors(doctors) {
         actions += `<button class="btn btn-sm btn-danger" onclick="deleteDoc('${uid}')">Delete</button>`;
 
         return `<tr>
+            <td style="font-family:monospace;font-size:0.78rem;color:var(--primary);">${uid}</td>
             <td>
                 <strong>${esc(doc.name || 'N/A')}</strong><br>
                 <small style="color:#94a3b8">${esc(doc.specialty || 'General')}</small>
