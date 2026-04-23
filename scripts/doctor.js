@@ -5,7 +5,7 @@ import { ref, set, push, onValue, update, get, onDisconnect, off, query, orderBy
 
 let currentDoctor = null, currentDoctorData = null;
 let currentSessionId = null, currentPatientId = null;
-let heartbeatInterval = null, sessionListener = null, chatListener = null;
+let heartbeatInterval = null, sessionListener = null, chatListener = null, healthListener = null;
 let pc = null, localStream = null;
 const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }], iceCandidatePoolSize: 10 };
 
@@ -109,13 +109,19 @@ function showConsultation(sid) {
     document.getElementById('dashboard-view')?.classList.add('hidden');
     document.getElementById('active-consultation')?.classList.remove('hidden');
 
+    // ── Clean up old listeners ───────────────────────────────
     if (sessionListener) off(sessionListener);
-    if (chatListener) off(chatListener);
+    if (chatListener)    off(chatListener);
+    if (healthListener)  off(healthListener);
 
+    // ── 1. Session info listener (name, symptoms, emergency) ─
     sessionListener = ref(db, `sessions/${sid}`);
+    let patientLoaded = false;
     onValue(sessionListener, snap => {
         const session = snap.val(); if (!session) return;
         currentPatientId = session.patientId;
+
+        // Patient name + emergency flag
         const nameEl = document.getElementById('p-name');
         if (nameEl) {
             nameEl.innerHTML = `${session.patientName || 'Patient'}${session.emergency ? ' <span style="color:#ef4444">⚠ EMERGENCY</span>' : ''}`;
@@ -123,28 +129,72 @@ function showConsultation(sid) {
         }
         const sxEl = document.getElementById('p-symptoms');
         if (sxEl) sxEl.textContent = session.symptoms || 'Not specified';
-        if (session.healthData) {
-            const hd = session.healthData;
-            ['bp','temp','sugar','spo2'].forEach(k => { const el = document.getElementById(`v-${k}`); if (el) el.textContent = hd[k] || '--'; });
-            const updEl = document.getElementById('v-updated');
-            if (updEl && hd.updatedAt) updEl.textContent = `Updated: ${new Date(hd.updatedAt).toLocaleTimeString()}`;
-        }
-        if (session.patientId) {
+
+        // Load patient profile ONCE (not on every update)
+        if (session.patientId && !patientLoaded) {
+            patientLoaded = true;
             get(ref(db, `users/patients/${session.patientId}`)).then(pSnap => {
                 const p = pSnap.val(); if (!p) return;
-                const ageEl = document.getElementById('p-age'); if (ageEl) ageEl.textContent = p.age || '--';
-                const bloodEl = document.getElementById('p-blood'); if (bloodEl) bloodEl.textContent = p.bloodGroup || '--';
-                const genEl = document.getElementById('p-gender'); if (genEl) genEl.textContent = p.gender || '--';
+                const ageEl   = document.getElementById('p-age');    if (ageEl) ageEl.textContent = p.age || '--';
+                const bloodEl = document.getElementById('p-blood');  if (bloodEl) bloodEl.textContent = p.bloodGroup || '--';
+                const genEl   = document.getElementById('p-gender'); if (genEl) genEl.textContent = p.gender || '--';
+                const histEl  = document.getElementById('p-medical-history');
+                if (histEl) histEl.textContent = p.medicalHistory || 'None reported';
             });
             loadPatientReports(session.patientId);
         }
     });
 
+    // ── 2. DEDICATED health-data listener (real-time vitals) ──
+    healthListener = ref(db, `sessions/${sid}/healthData`);
+    let lastVitalUpdate = 0;
+    onValue(healthListener, snap => {
+        const hd = snap.val();
+        if (!hd) return;
+
+        const vitalFields = [
+            { key: 'bp',    id: 'v-bp' },
+            { key: 'temp',  id: 'v-temp' },
+            { key: 'sugar', id: 'v-sugar' },
+            { key: 'spo2',  id: 'v-spo2' },
+            { key: 'pulse', id: 'v-pulse' },
+            { key: 'heartRate', id: 'v-heartrate' }
+        ];
+
+        const isNew = hd.updatedAt && hd.updatedAt !== lastVitalUpdate;
+        lastVitalUpdate = hd.updatedAt || 0;
+
+        vitalFields.forEach(({ key, id }) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const val = hd[key] || '--';
+            if (el.textContent !== String(val)) {
+                el.textContent = val;
+                // Pulse animation on change
+                if (isNew) {
+                    el.closest('.vital-box')?.classList.add('vital-pulse');
+                    setTimeout(() => el.closest('.vital-box')?.classList.remove('vital-pulse'), 1200);
+                }
+            }
+        });
+
+        const updEl = document.getElementById('v-updated');
+        if (updEl && hd.updatedAt) {
+            const t = new Date(hd.updatedAt);
+            updEl.textContent = `🟢 Updated: ${t.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+            updEl.style.color = '#10b981';
+            // Fade back to grey after 10s
+            setTimeout(() => { if (updEl) updEl.style.color = '#94a3b8'; }, 10000);
+        }
+    });
+
+    // ── 3. Chat listener ─────────────────────────────────────
     chatListener = ref(db, `sessions/${sid}/chat`);
     onValue(chatListener, snap => {
         const chatBox = document.getElementById('chat-messages'); if (!chatBox) return;
         chatBox.innerHTML = '';
-        Object.values(snap.val() || {}).forEach(m => {
+        const messages = snap.val() || {};
+        Object.values(messages).forEach(m => {
             const div = document.createElement('div');
             div.className = `msg msg-${m.role === 'doctor' ? 'd' : 'p'}`;
             div.textContent = m.text;
@@ -157,8 +207,19 @@ function showConsultation(sid) {
 }
 
 function hideConsultation() {
+    // Clean up all real-time listeners
+    if (sessionListener) { off(sessionListener); sessionListener = null; }
+    if (chatListener)    { off(chatListener);    chatListener = null; }
+    if (healthListener)  { off(healthListener);  healthListener = null; }
+
     document.getElementById('active-consultation')?.classList.add('hidden');
     document.getElementById('dashboard-view')?.classList.remove('hidden');
+
+    // Reset vital displays
+    ['v-bp','v-temp','v-sugar','v-spo2','v-pulse','v-heartrate'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.textContent = '--';
+    });
+    const updEl = document.getElementById('v-updated'); if (updEl) updEl.textContent = '';
     const chatBox = document.getElementById('chat-messages'); if (chatBox) chatBox.innerHTML = '';
     currentPatientId = null;
 }

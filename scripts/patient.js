@@ -275,26 +275,71 @@ window.flagEmergency = async () => {
     showToast('⚠️ Emergency flagged! Doctor has been notified.', 'warning');
 };
 
-// Vitals
+// ─── Vitals: Real-time update ─────────────────────────────────────────────────
+let vitalsDebounce = null;
+const VITAL_IDS = ['v-bp', 'v-temp', 'v-sugar', 'v-spo2', 'v-pulse', 'v-heartrate'];
+
+// Manual submit via button
 document.getElementById('vitals-form')?.addEventListener('submit', async e => {
     e.preventDefault();
-    if (!currentSessionId) { showToast('No active session.', 'warning'); return; }
-    const btn = e.target.querySelector('button[type="submit"]') || document.querySelector('button[form="vitals-form"]');
-    btn.disabled = true; btn.textContent = 'Updating...';
-    try {
-        const vitals = {
-            bp: document.getElementById('v-bp')?.value.trim() || '',
-            temp: document.getElementById('v-temp')?.value.trim() || '',
-            sugar: document.getElementById('v-sugar')?.value.trim() || '',
-            spo2: document.getElementById('v-spo2')?.value.trim() || '',
-            updatedAt: Date.now()
-        };
-        if (!vitals.bp && !vitals.temp && !vitals.sugar && !vitals.spo2) throw new Error('Enter at least one vital.');
-        await update(ref(db, `sessions/${currentSessionId}/healthData`), vitals);
-        btn.textContent = '✓ Updated!';
-        setTimeout(() => { btn.textContent = 'Update Vitals'; btn.disabled = false; }, 2000);
-    } catch (err) { showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Update Vitals'; }
+    await sendVitals();
 });
+
+// Auto-send on input change (debounced 1.5s so doctor sees it near-instantly)
+VITAL_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+        clearTimeout(vitalsDebounce);
+        vitalsDebounce = setTimeout(() => sendVitals(true), 1500);
+    });
+});
+
+async function sendVitals(silent = false) {
+    if (!currentSessionId) {
+        if (!silent) showToast('No active session.', 'warning');
+        return;
+    }
+    const btn = document.querySelector('button[form="vitals-form"]') ||
+                document.getElementById('vitals-form')?.querySelector('button[type="submit"]');
+
+    const vitals = {
+        bp:        document.getElementById('v-bp')?.value.trim() || '',
+        temp:      document.getElementById('v-temp')?.value.trim() || '',
+        sugar:     document.getElementById('v-sugar')?.value.trim() || '',
+        spo2:      document.getElementById('v-spo2')?.value.trim() || '',
+        pulse:     document.getElementById('v-pulse')?.value.trim() || '',
+        heartRate: document.getElementById('v-heartrate')?.value.trim() || '',
+        updatedAt: Date.now()
+    };
+
+    const hasAny = vitals.bp || vitals.temp || vitals.sugar || vitals.spo2 || vitals.pulse || vitals.heartRate;
+    if (!hasAny) {
+        if (!silent) showToast('Enter at least one vital.', 'warning');
+        return;
+    }
+
+    if (btn && !silent) { btn.disabled = true; btn.textContent = '⏳ Updating…'; }
+
+    try {
+        await update(ref(db, `sessions/${currentSessionId}/healthData`), vitals);
+        if (btn && !silent) {
+            btn.textContent = '✅ Sent to Doctor!';
+            btn.style.background = '#10b981';
+            setTimeout(() => { btn.textContent = '📡 Update Vitals'; btn.style.background = ''; btn.disabled = false; }, 2500);
+        }
+        // Visual confirmation
+        const syncEl = document.getElementById('vitals-sync-status');
+        if (syncEl) {
+            syncEl.textContent = `🟢 Synced ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+            syncEl.style.color = '#10b981';
+            setTimeout(() => { if (syncEl) syncEl.style.color = '#94a3b8'; }, 8000);
+        }
+    } catch (err) {
+        if (!silent) showToast('Failed: ' + err.message, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '📡 Update Vitals'; btn.style.background = ''; }
+    }
+}
 
 // History
 function loadPatientHistory(patientId) {

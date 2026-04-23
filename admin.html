@@ -303,9 +303,15 @@
                         <input type="tel" id="doc-phone" placeholder="+91 98765 43210">
                     </div>
                 </div>
-                <div class="input-group">
-                    <label>Experience</label>
-                    <input type="text" id="doc-experience" placeholder="5 years">
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Experience</label>
+                        <input type="text" id="doc-experience" placeholder="5 years">
+                    </div>
+                    <div class="input-group">
+                        <label>Hospital / Clinic</label>
+                        <input type="text" id="doc-hospital" placeholder="City General Hospital">
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="close-modal" class="btn btn-outline">Cancel</button>
@@ -316,25 +322,5 @@
     </div>
 
     <script type="module" src="./scripts/admin.js"></script>
-    <script>
-        // Page title update on nav
-        document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const titles = { dashboard: 'Dashboard', doctors: 'Doctor Management', patients: 'Patient Management', sessions: 'Live Sessions', reports: 'System Reports' };
-                document.getElementById('page-title').textContent = titles[btn.dataset.section] || 'Dashboard';
-            });
-        });
-        // Overlay for mobile
-        document.getElementById('overlay')?.addEventListener('click', () => {
-            document.getElementById('sidebar')?.classList.remove('open');
-            document.getElementById('overlay')?.classList.remove('show');
-        });
-        document.getElementById('menu-toggle')?.addEventListener('click', () => {
-            document.getElementById('overlay')?.classList.add('show');
-        });
-        document.getElementById('close-sidebar')?.addEventListener('click', () => {
-            document.getElementById('overlay')?.classList.remove('show');
-        });
-    </script>
 </body>
 </html>
