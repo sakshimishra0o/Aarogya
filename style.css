@@ -402,4 +402,15 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     .consultation-grid { grid-template-columns: 1fr; }
     .auth-card { padding: 1.5rem; }
     #menu-toggle { display: none !important; }
+    
+    /* Fix table squishing on mobile */
+    div[style*="overflow-x:auto"] table {
+        min-width: 800px; /* Forces horizontal scrolling */
+    }
+    .top-header {
+        padding: 0.75rem 1rem;
+    }
+    #page-title {
+        font-size: 1.1rem !important;
+    }
 }
