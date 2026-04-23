@@ -1,7 +1,7 @@
 {
   "rules": {
-    ".read": "auth != null && (auth.uid === 'uCJKTncjyTcXDpHOMEw2jBHsLVE3' || auth.token.email === 'AarogyaCloud@gmail.com' || root.child('users/admins').child(auth.uid).exists())",
-    ".write": "auth != null && (auth.uid === 'uCJKTncjyTcXDpHOMEw2jBHsLVE3' || auth.token.email === 'AarogyaCloud@gmail.com' || root.child('users/admins').child(auth.uid).exists())",
+    ".read": "auth != null && (auth.uid === 'FKnjbM7NgyRAhmWE8ZAT1qyR66t1' || auth.token.email === 'AarogyaCloud@gmail.com' || root.child('users/admins').child(auth.uid).exists())",
+    ".write": "auth != null && (auth.uid === 'FKnjbM7NgyRAhmWE8ZAT1qyR66t1' || auth.token.email === 'AarogyaCloud@gmail.com' || root.child('users/admins').child(auth.uid).exists())",
     "users": {
       "admins": {
         ".read": "auth != null"
