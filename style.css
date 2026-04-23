@@ -335,11 +335,70 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     to { transform: translateY(0); }
 }
 
-/* Responsive */
+/* Responsive Bottom Nav */
 @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
-    .main-content { margin-left: 0; }
+    /* Transform Sidebar into Bottom Nav */
+    .sidebar {
+        transform: none !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 70px !important;
+        flex-direction: row !important;
+        z-index: 2000 !important;
+        box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .sidebar-header {
+        display: none !important;
+    }
+    .sidebar-nav {
+        flex-direction: row !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        padding: 0 !important;
+        width: 100% !important;
+        overflow: visible !important;
+        gap: 0 !important;
+    }
+    .nav-item {
+        flex-direction: column !important;
+        padding: 0.2rem !important;
+        font-size: 0.65rem !important;
+        gap: 0.2rem !important;
+        width: auto !important;
+        flex: 1 !important;
+        justify-content: center !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+    }
+    .nav-item:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+    .nav-item.active {
+        background: transparent !important;
+        color: #fff !important;
+    }
+    .nav-item.active i, .nav-item.active svg {
+        color: #fff !important;
+        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+    }
+    .nav-item i, .nav-item svg {
+        margin: 0 !important;
+        width: 20px !important;
+        height: 20px !important;
+    }
+    .nav-item.logout {
+        margin-top: 0 !important;
+        color: #fca5a5 !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding-bottom: 80px !important; /* space for bottom nav */
+    }
+    
     .consultation-grid { grid-template-columns: 1fr; }
     .auth-card { padding: 1.5rem; }
+    #menu-toggle { display: none !important; }
 }
