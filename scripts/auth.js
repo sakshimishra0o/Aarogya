@@ -12,7 +12,7 @@ const MASTER_ADMIN_EMAIL = 'AarogyaCloud@gmail.com';
 
 async function getUserRole(uid) {
     const user = auth.currentUser;
-    if (user && user.email === MASTER_ADMIN_EMAIL) {
+    if (user && (user.email === MASTER_ADMIN_EMAIL || uid === 'oGTYVxmnH1Vsk0h4jee7lSUia183')) {
         return { role: 'admin', data: { name: 'Master Admin', email: user.email, approved: true } };
     }
     try {
@@ -88,7 +88,7 @@ export async function login(email, password, requiredRole) {
         const user = userCredential.user;
         let { role, data } = await getUserRole(user.uid);
 
-        if (!role && email === MASTER_ADMIN_EMAIL) {
+        if (!role && (email === MASTER_ADMIN_EMAIL || user.uid === 'oGTYVxmnH1Vsk0h4jee7lSUia183')) {
             role = 'admin';
             data = { name: 'Master Admin', email, approved: true };
         }
