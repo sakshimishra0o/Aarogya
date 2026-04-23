@@ -16,7 +16,7 @@ async function getUserRole(uid) {
         return { role: 'admin', data: { name: 'Master Admin', email: user.email, approved: true } };
     }
     try {
-        const adminSnap = await get(ref(db, `users/admin/${uid}`));
+        const adminSnap = await get(ref(db, `users/admins/${uid}`));
         if (adminSnap.exists()) return { role: 'admin', data: adminSnap.val() };
 
         const doctorSnap = await get(ref(db, `users/doctors/${uid}`));
