@@ -349,6 +349,7 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
         z-index: 2000 !important;
         box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1) !important;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px 12px 0 0 !important;
     }
     .sidebar-header {
         display: none !important;
