@@ -1,394 +1,230 @@
-// Admin Panel - Improved Doctor Management
+// Admin Panel - Full Featured & Secured
 import { db, auth } from './firebase.js';
 import { checkAuth, login, logout } from './auth.js';
-import {
-    ref, set, push, onValue, update, remove, get
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { ref, set, push, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Initialize Auth Check - MOVED TO BOTTOM
-// checkAuth('admin');
-
-// Store admin credentials for re-login after creating doctor
 let adminCredentials = null;
+let currentSection = 'dashboard';
 
-// DOM Elements
-const loginForm = document.getElementById('login-form');
-const logoutBtn = document.getElementById('logout-btn');
-const doctorList = document.getElementById('doctor-list');
-const doctorModal = document.getElementById('doctor-modal');
-const addDoctorBtn = document.getElementById('add-doctor-btn');
-const closeModal = document.getElementById('close-modal');
-const addDoctorForm = document.getElementById('add-doctor-form');
-const statTotal = document.getElementById('stat-total');
-const statActive = document.getElementById('stat-active');
-const statOnline = document.getElementById('stat-online');
-const statEmergency = document.getElementById('stat-emergency');
-
-// Login Handler - Store credentials for later use
-loginForm?.addEventListener('submit', async (e) => {
+// Login
+document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    console.log('=== Admin Login Attempt ===');
     const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.innerText;
-
+    btn.disabled = true; btn.textContent = 'Logging in...';
     try {
-        btn.disabled = true;
-        btn.innerText = 'Logging in...';
-
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
-        console.log('Attempting login for:', email);
-
-        // Store credentials for re-login after adding doctor
         adminCredentials = { email, password };
-
         await login(email, password, 'admin');
-        console.log('Login logic successful');
-
-    } catch (error) {
-        console.error('Admin Login Error:', error);
-        alert(error.message);
-        btn.disabled = false;
-        btn.innerText = originalText;
+    } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false; btn.textContent = 'Login to Dashboard';
     }
 });
 
-// Logout Handler
-logoutBtn?.addEventListener('click', () => {
-    adminCredentials = null;
-    logout();
+// Logout
+document.getElementById('logout-btn')?.addEventListener('click', () => { adminCredentials = null; logout(); });
+
+// Nav
+document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        currentSection = btn.dataset.section;
+        switchSection(currentSection);
+        if (window.innerWidth <= 768) document.getElementById('sidebar')?.classList.remove('open');
+    });
 });
 
-// Modal Handlers
-addDoctorBtn?.addEventListener('click', () => {
-    doctorModal?.classList.remove('hidden');
+function switchSection(name) {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.nav-item[data-section="${name}"]`)?.classList.add('active');
+    document.querySelectorAll('.admin-section-view').forEach(s => s.classList.add('hidden'));
+    document.getElementById(`section-${name}`)?.classList.remove('hidden');
+}
+
+// Mobile sidebar
+document.getElementById('menu-toggle')?.addEventListener('click', () => {
+    document.getElementById('sidebar')?.classList.add('open');
+});
+document.getElementById('close-sidebar')?.addEventListener('click', () => {
+    document.getElementById('sidebar')?.classList.remove('open');
 });
 
-closeModal?.addEventListener('click', () => {
-    doctorModal?.classList.add('hidden');
-    addDoctorForm?.reset();
-});
+// Add Doctor Modal
+document.getElementById('add-doctor-btn')?.addEventListener('click', () => document.getElementById('doctor-modal')?.classList.remove('hidden'));
+document.getElementById('close-modal')?.addEventListener('click', () => { document.getElementById('doctor-modal')?.classList.add('hidden'); document.getElementById('add-doctor-form')?.reset(); });
+document.getElementById('doctor-modal')?.addEventListener('click', e => { if (e.target === e.currentTarget) { e.currentTarget.classList.add('hidden'); } });
 
-// Close modal on outside click
-doctorModal?.addEventListener('click', (e) => {
-    if (e.target === doctorModal) {
-        doctorModal.classList.add('hidden');
-        addDoctorForm?.reset();
-    }
-});
-
-// Add Doctor Form Handler - Creates doctor WITHOUT logging out admin
-addDoctorForm?.addEventListener('submit', async (e) => {
+// Add Doctor Form
+document.getElementById('add-doctor-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.innerText;
-
+    btn.disabled = true; btn.textContent = 'Registering...';
     try {
-        btn.disabled = true;
-        btn.innerText = 'Registering...';
-
         const name = document.getElementById('doc-name').value.trim();
         const email = document.getElementById('doc-email').value.trim();
         const password = document.getElementById('doc-password').value;
-        const specialty = document.getElementById('doc-specialty')?.value.trim() || 'General Physician';
+        const specialty = document.getElementById('doc-specialty').value.trim() || 'General Physician';
+        const phone = document.getElementById('doc-phone')?.value.trim() || '';
+        const experience = document.getElementById('doc-experience')?.value.trim() || '';
 
-        // Method: Create doctor account then re-login as admin
-        // (Firebase Auth automatically signs in new user, so we need to switch back)
-
-        // Step 1: Create doctor account
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const doctorUid = userCredential.user.uid;
-
-        // Step 2: Save doctor data to database
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const doctorUid = cred.user.uid;
         await set(ref(db, `users/doctors/${doctorUid}`), {
-            name,
-            email,
-            specialty,
-            role: 'doctor',
-            approved: false,
-            blocked: false,
-            status: 'INACTIVE',
-            busy: false,
-            createdAt: Date.now()
+            name, email, specialty, phone, experience,
+            role: 'doctor', approved: false, blocked: false,
+            status: 'INACTIVE', busy: false, createdAt: Date.now()
         });
-
-        // Step 3: Sign out from doctor account
         await signOut(auth);
+        if (adminCredentials) await signInWithEmailAndPassword(auth, adminCredentials.email, adminCredentials.password);
 
-        // Step 4: Re-login as admin
-        if (adminCredentials) {
-            await signInWithEmailAndPassword(auth, adminCredentials.email, adminCredentials.password);
-        }
-
-        // Step 5: Update UI
-        alert(`Doctor "${name}" registered successfully!\n\nEmail: ${email}\nPassword: ${password}\n\nYou can now approve them.`);
-        doctorModal.classList.add('hidden');
-        addDoctorForm.reset();
-        btn.disabled = false;
-        btn.innerText = originalText;
-
-    } catch (error) {
-        console.error('Add doctor error:', error);
-
-        let message = error.message;
-        if (error.code === 'auth/email-already-in-use') {
-            message = 'This email is already registered.';
-        } else if (error.code === 'auth/weak-password') {
-            message = 'Password should be at least 6 characters.';
-        }
-
-        alert('Error: ' + message);
-
-        // Try to re-login as admin if we got logged out
-        if (adminCredentials) {
-            try {
-                await signInWithEmailAndPassword(auth, adminCredentials.email, adminCredentials.password);
-            } catch (reLoginError) {
-                console.error('Re-login failed:', reLoginError);
-            }
-        }
-
-        btn.disabled = false;
-        btn.innerText = originalText;
+        showToast(`Dr. ${name} registered! Email: ${email} | Pass: ${password}`, 'success');
+        document.getElementById('doctor-modal')?.classList.add('hidden');
+        document.getElementById('add-doctor-form')?.reset();
+    } catch (err) {
+        let msg = err.message;
+        if (err.code === 'auth/email-already-in-use') msg = 'This email is already registered.';
+        if (err.code === 'auth/weak-password') msg = 'Password must be at least 6 characters.';
+        showToast('Error: ' + msg, 'error');
+        try { if (adminCredentials) await signInWithEmailAndPassword(auth, adminCredentials.email, adminCredentials.password); } catch {}
+    } finally {
+        btn.disabled = false; btn.textContent = 'Register Doctor';
     }
 });
 
-// Real-time Monitoring
+// Monitoring
 function initMonitoring() {
-    console.log('Initializing admin monitoring...');
-
-    // Watch Doctors
-    onValue(ref(db, 'users/doctors'), (snapshot) => {
-        const doctors = snapshot.val() || {};
-        console.log('Doctors updated:', Object.keys(doctors).length);
-        renderDoctors(doctors);
-        updateDoctorStats(doctors);
-    }, (error) => {
-        console.error('Error watching doctors:', error);
+    onValue(ref(db, 'users/doctors'), snap => {
+        const docs = snap.val() || {};
+        renderDoctors(docs);
+        updateStats(docs);
     });
-
-    // Watch Sessions
-    onValue(ref(db, 'sessions'), (snapshot) => {
-        const sessions = snapshot.val() || {};
+    onValue(ref(db, 'sessions'), snap => {
+        const sessions = snap.val() || {};
         renderSessions(sessions);
-    }, (error) => {
-        console.error('Error watching sessions:', error);
     });
+    onValue(ref(db, 'users/patients'), snap => {
+        const patients = snap.val() || {};
+        renderPatients(patients);
+        document.getElementById('stat-patients').textContent = Object.keys(patients).length;
+    });
+}
+
+function updateStats(doctors) {
+    const total = Object.keys(doctors).length;
+    const online = Object.values(doctors).filter(d => d.status === 'ACTIVE' && !d.blocked && d.approved).length;
+    document.getElementById('stat-doctors').textContent = total;
+    document.getElementById('stat-online').textContent = online;
 }
 
 function renderDoctors(doctors) {
-    if (!doctorList) return;
-
-    doctorList.innerHTML = '';
-
-    const doctorEntries = Object.entries(doctors);
-
-    if (doctorEntries.length === 0) {
-        doctorList.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align:center;color:#64748b;padding:2rem;">
-                    No doctors registered yet. Click "+ Add Doctor" to register one.
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    doctorEntries.forEach(([uid, doc]) => {
-        const isBlocked = doc.blocked === true;
-        const isApproved = doc.approved === true;
-        const tr = document.createElement('tr');
-
-        // Determine status
-        let statusClass = 'status-inactive';
-        let statusText = 'OFFLINE';
-
-        if (isBlocked) {
-            statusClass = 'status-inactive';
-            statusText = 'BLOCKED';
-        } else if (doc.status === 'ACTIVE') {
-            statusClass = doc.busy ? 'status-busy' : 'status-active';
-            statusText = doc.busy ? 'IN SESSION' : 'ONLINE';
-        }
-
-        // Build action buttons
+    const list = document.getElementById('doctor-list');
+    if (!list) return;
+    const entries = Object.entries(doctors);
+    if (!entries.length) { list.innerHTML = `<tr><td colspan="6" class="empty-td">No doctors registered yet.</td></tr>`; return; }
+    list.innerHTML = entries.map(([uid, doc]) => {
+        const blocked = doc.blocked === true;
+        const approved = doc.approved === true;
+        let statusClass = 'status-offline', statusText = 'OFFLINE';
+        if (blocked) { statusClass = 'status-inactive'; statusText = 'BLOCKED'; }
+        else if (doc.status === 'ACTIVE') { statusClass = doc.busy ? 'status-busy' : 'status-active'; statusText = doc.busy ? 'IN SESSION' : 'ONLINE'; }
         let actions = '';
-
-        if (!isApproved && !isBlocked) {
-            actions += `<button class="btn btn-sm btn-primary" onclick="window.approveDoctor('${uid}')">Approve</button> `;
-        }
-
-        if (isApproved && !isBlocked) {
-            actions += `<button class="btn btn-sm" style="background:#f59e0b;color:white;" onclick="window.blockDoctor('${uid}')">Block</button> `;
-        }
-
-        if (isBlocked) {
-            actions += `<button class="btn btn-sm btn-accent" onclick="window.unblockDoctor('${uid}')">Unblock</button> `;
-        }
-
-        actions += `<button class="btn btn-sm btn-danger" onclick="window.deleteDoctor('${uid}')">Delete</button>`;
-
-        tr.innerHTML = `
-            <td>
-                <strong>${doc.name || 'Unknown'}</strong>
-                <br><small style="color:#64748b;">${doc.specialty || 'General'}</small>
-            </td>
-            <td style="font-size:0.85rem;">${doc.email || '-'}</td>
+        if (!approved && !blocked) actions += `<button class="btn btn-sm btn-accent" onclick="approveDoc('${uid}')">✓ Approve</button>`;
+        if (approved && !blocked) actions += `<button class="btn btn-sm btn-warning" onclick="blockDoc('${uid}')">Block</button>`;
+        if (blocked) actions += `<button class="btn btn-sm btn-primary" onclick="unblockDoc('${uid}')">Unblock</button>`;
+        actions += `<button class="btn btn-sm btn-danger" onclick="deleteDoc('${uid}')">Delete</button>`;
+        return `<tr>
+            <td><strong>${doc.name || 'N/A'}</strong><br><small style="color:#94a3b8">${doc.specialty || 'General'}</small></td>
+            <td style="font-size:0.82rem">${doc.email || '-'}</td>
+            <td>${doc.phone || '-'}</td>
             <td><span class="status-indicator ${statusClass}">${statusText}</span></td>
-            <td>
-                ${isApproved ? '<span style="color:#10b981;">Approved</span>' : '<span style="color:#f59e0b;">Pending</span>'}
-            </td>
-            <td style="white-space:nowrap;">${actions}</td>
-        `;
-
-        doctorList.appendChild(tr);
-    });
+            <td><span style="color:${approved ? '#10b981' : '#f59e0b'};font-weight:600">${approved ? '✓ Approved' : '⏳ Pending'}</span></td>
+            <td class="actions-td">${actions}</td>
+        </tr>`;
+    }).join('');
 }
 
-function updateDoctorStats(doctors) {
-    let online = 0;
-    let total = Object.keys(doctors).length;
-
-    Object.values(doctors).forEach(d => {
-        if (d.status === 'ACTIVE' && !d.blocked && d.approved) online++;
-    });
-
-    if (statOnline) statOnline.innerText = online;
+function renderPatients(patients) {
+    const list = document.getElementById('patient-list');
+    if (!list) return;
+    const entries = Object.entries(patients);
+    if (!entries.length) { list.innerHTML = `<tr><td colspan="5" class="empty-td">No patients registered yet.</td></tr>`; return; }
+    list.innerHTML = entries.map(([uid, p]) => {
+        const blocked = p.blocked === true;
+        return `<tr>
+            <td><strong>${p.name || 'N/A'}</strong></td>
+            <td style="font-size:0.82rem">${p.email || '-'}</td>
+            <td>${p.age || '-'}</td>
+            <td>${p.bloodGroup || '-'}</td>
+            <td>
+                <span style="color:${blocked ? '#ef4444' : '#10b981'};font-weight:600">${blocked ? 'Blocked' : 'Active'}</span>
+                ${!blocked ? `<button class="btn btn-sm btn-warning" onclick="blockPatient('${uid}')" style="margin-left:0.5rem">Block</button>` : `<button class="btn btn-sm btn-primary" onclick="unblockPatient('${uid}')" style="margin-left:0.5rem">Unblock</button>`}
+            </td>
+        </tr>`;
+    }).join('');
 }
 
 function renderSessions(sessions) {
     const list = document.getElementById('session-list');
     if (!list) return;
-
-    list.innerHTML = '';
-
-    let activeCount = 0;
-    let emergencyCount = 0;
-    let totalConsultations = Object.keys(sessions).length;
-
-    if (statTotal) statTotal.innerText = totalConsultations;
-
-    if (totalConsultations === 0) {
-        list.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align:center;color:#64748b;padding:2rem;">
-                    No consultation sessions yet.
-                </td>
-            </tr>
-        `;
-        if (statActive) statActive.innerText = 0;
-        if (statEmergency) statEmergency.innerText = 0;
-        return;
-    }
-
-    // Sort by newest first
-    const sortedSessions = Object.entries(sessions)
-        .sort((a, b) => (b[1].startTime || 0) - (a[1].startTime || 0))
-        .slice(0, 20); // Show max 20 sessions
-
-    sortedSessions.forEach(([sid, session]) => {
-        if (!session.endTime) activeCount++;
-        if (session.emergency) emergencyCount++;
-
-        const isLive = !session.endTime;
-        const tr = document.createElement('tr');
-
-        tr.innerHTML = `
-            <td style="font-family:monospace;font-size:0.8rem;">${sid.substring(0, 8)}...</td>
-            <td>${session.patientName || 'Patient'}</td>
-            <td>${session.doctorName || 'Doctor'}</td>
-            <td>${formatDuration(session.startTime, session.endTime)}</td>
+    let active = 0, emergency = 0, total = Object.keys(sessions).length;
+    document.getElementById('stat-total').textContent = total;
+    const sorted = Object.entries(sessions).sort((a, b) => (b[1].startTime || 0) - (a[1].startTime || 0)).slice(0, 30);
+    if (!sorted.length) { list.innerHTML = `<tr><td colspan="6" class="empty-td">No sessions yet.</td></tr>`; if (document.getElementById('stat-active')) document.getElementById('stat-active').textContent = 0; if (document.getElementById('stat-emergency')) document.getElementById('stat-emergency').textContent = 0; return; }
+    list.innerHTML = sorted.map(([sid, s]) => {
+        if (!s.endTime) active++;
+        if (s.emergency) emergency++;
+        const isLive = !s.endTime;
+        const dur = formatDur(s.startTime, s.endTime);
+        const date = s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN') : '-';
+        return `<tr>
+            <td style="font-family:monospace;font-size:0.78rem">${sid.substring(0,10)}…</td>
+            <td>${s.patientName || 'Patient'}</td>
+            <td>${s.doctorName || 'Doctor'}</td>
+            <td>${date}</td>
+            <td>${dur}</td>
             <td>
-                ${session.emergency ? '<span class="status-indicator" style="background:#fee2e2;color:#dc2626;"><span class="icon-svg" style="width:0.9em;height:0.9em;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></span> EMERGENCY</span> ' : ''}
+                ${s.emergency ? '<span class="badge-emergency">⚠ EMRG</span> ' : ''}
                 <span class="status-indicator ${isLive ? 'status-active' : 'status-offline'}">${isLive ? 'LIVE' : 'Done'}</span>
             </td>
-        `;
-        list.appendChild(tr);
-    });
-
-    if (statActive) statActive.innerText = activeCount;
-    if (statEmergency) statEmergency.innerText = emergencyCount;
+        </tr>`;
+    }).join('');
+    document.getElementById('stat-active').textContent = active;
+    document.getElementById('stat-emergency').textContent = emergency;
 }
 
-function formatDuration(startTime, endTime) {
-    if (!startTime) return '-';
-    const end = endTime || Date.now();
-    const min = Math.floor((end - startTime) / 60000);
-    if (min < 1) return '< 1 min';
-    if (min < 60) return `${min} min`;
-    const hrs = Math.floor(min / 60);
-    const remainingMin = min % 60;
-    return `${hrs}h ${remainingMin}m`;
+function formatDur(start, end) {
+    if (!start) return '-';
+    const min = Math.floor(((end || Date.now()) - start) / 60000);
+    if (min < 1) return '< 1m';
+    if (min < 60) return `${min}m`;
+    return `${Math.floor(min/60)}h ${min%60}m`;
 }
 
-// Global Doctor Management Functions
-window.approveDoctor = async (uid) => {
-    if (confirm('Approve this doctor? They will be able to login and receive patients.')) {
-        try {
-            await update(ref(db, `users/doctors/${uid}`), {
-                approved: true,
-                blocked: false
-            });
-            console.log('Doctor approved:', uid);
-        } catch (error) {
-            alert('Error: ' + error.message);
-        }
-    }
-};
+// Actions
+window.approveDoc = async uid => { if (confirm('Approve this doctor?')) { try { await update(ref(db, `users/doctors/${uid}`), { approved: true, blocked: false }); showToast('Doctor approved!', 'success'); } catch(e) { showToast(e.message, 'error'); } } };
+window.blockDoc = async uid => { if (confirm('Block this doctor?')) { try { await update(ref(db, `users/doctors/${uid}`), { blocked: true, approved: false, status: 'INACTIVE', busy: false, activeSessionId: null }); showToast('Doctor blocked.', 'success'); } catch(e) { showToast(e.message, 'error'); } } };
+window.unblockDoc = async uid => { if (confirm('Unblock this doctor?')) { try { await update(ref(db, `users/doctors/${uid}`), { blocked: false, approved: true }); showToast('Doctor unblocked!', 'success'); } catch(e) { showToast(e.message, 'error'); } } };
+window.deleteDoc = async uid => { if (confirm('Permanently delete this doctor? This cannot be undone.')) { try { await remove(ref(db, `users/doctors/${uid}`)); await remove(ref(db, `doctorStatus/${uid}`)); showToast('Doctor deleted.', 'success'); } catch(e) { showToast(e.message, 'error'); } } };
+window.blockPatient = async uid => { if (confirm('Block this patient?')) { try { await update(ref(db, `users/patients/${uid}`), { blocked: true }); showToast('Patient blocked.', 'success'); } catch(e) { showToast(e.message, 'error'); } } };
+window.unblockPatient = async uid => { if (confirm('Unblock this patient?')) { try { await update(ref(db, `users/patients/${uid}`), { blocked: false }); showToast('Patient unblocked!', 'success'); } catch(e) { showToast(e.message, 'error'); } } };
 
-window.blockDoctor = async (uid) => {
-    if (confirm('Block this doctor? They will be logged out and cannot receive patients.')) {
-        try {
-            await update(ref(db, `users/doctors/${uid}`), {
-                blocked: true,
-                approved: false,
-                status: 'INACTIVE',
-                busy: false,
-                activeSessionId: null
-            });
-            console.log('Doctor blocked:', uid);
-        } catch (error) {
-            alert('Error: ' + error.message);
-        }
-    }
-};
+// Toast notification
+function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('toast-show'), 10);
+    setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 400); }, 4000);
+}
 
-window.unblockDoctor = async (uid) => {
-    if (confirm('Unblock and approve this doctor?')) {
-        try {
-            await update(ref(db, `users/doctors/${uid}`), {
-                blocked: false,
-                approved: true
-            });
-            console.log('Doctor unblocked:', uid);
-        } catch (error) {
-            alert('Error: ' + error.message);
-        }
-    }
-};
-
-window.deleteDoctor = async (uid) => {
-    if (confirm('Permanently delete this doctor? This cannot be undone.')) {
-        try {
-            await remove(ref(db, `users/doctors/${uid}`));
-            await remove(ref(db, `doctorStatus/${uid}`));
-            console.log('Doctor deleted:', uid);
-        } catch (error) {
-            alert('Error: ' + error.message);
-        }
-    }
-};
-
-// Initialize after auth success
-window.addEventListener('auth-success', (e) => {
-    console.log('Admin authenticated:', e.detail.email);
+window.addEventListener('auth-success', e => {
+    console.log('Admin auth:', e.detail.email);
+    const nameEl = document.getElementById('admin-name');
+    if (nameEl) nameEl.textContent = e.detail.email;
     initMonitoring();
+    switchSection('dashboard');
 });
 
-// Start Auth Check
 checkAuth('admin');

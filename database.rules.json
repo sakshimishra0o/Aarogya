@@ -2,8 +2,6 @@
   "rules": {
     "users": {
       "patients": {
-        // Any logged in user can read the list to verify roles, 
-        // but only the owner or admin can see full details (implemented at $uid level)
         ".read": "auth != null",
         "$uid": {
           ".read": "auth != null && (auth.uid == $uid || root.child('users/admin').child(auth.uid).exists() || root.child('users/doctors').child(auth.uid).exists())",
@@ -34,21 +32,22 @@
     },
     "sessions": {
       ".read": "auth != null",
+      ".write": "auth != null",
       ".indexOn": ["patientId", "doctorId", "status"],
       "$sessionId": {
-        ".read": "auth != null && (data.child('patientId').val() == auth.uid || data.child('doctorId').val() == auth.uid || root.child('users/admin').child(auth.uid).exists())",
-        ".write": "auth != null && (!data.exists() || data.child('patientId').val() == auth.uid || data.child('doctorId').val() == auth.uid || root.child('users/admin').child(auth.uid).exists())",
+        ".read": "auth != null",
+        ".write": "auth != null",
         "chat": {
-          ".read": "auth != null && (root.child('sessions').child($sessionId).child('patientId').val() == auth.uid || root.child('sessions').child($sessionId).child('doctorId').val() == auth.uid || root.child('users/admin').child(auth.uid).exists())",
-          ".write": "auth != null && (root.child('sessions').child($sessionId).child('patientId').val() == auth.uid || root.child('sessions').child($sessionId).child('doctorId').val() == auth.uid)"
+          ".read": "auth != null",
+          ".write": "auth != null"
         },
         "healthData": {
-          ".read": "auth != null && (root.child('sessions').child($sessionId).child('patientId').val() == auth.uid || root.child('sessions').child($sessionId).child('doctorId').val() == auth.uid || root.child('users/admin').child(auth.uid).exists())",
+          ".read": "auth != null",
           ".write": "auth != null && root.child('sessions').child($sessionId).child('patientId').val() == auth.uid"
         },
-        "prescription": {
-          ".read": "auth != null && (root.child('sessions').child($sessionId).child('patientId').val() == auth.uid || root.child('sessions').child($sessionId).child('doctorId').val() == auth.uid || root.child('users/admin').child(auth.uid).exists())",
-          ".write": "auth != null && root.child('sessions').child($sessionId).child('doctorId').val() == auth.uid"
+        "webrtc": {
+          ".read": "auth != null",
+          ".write": "auth != null"
         }
       }
     }

@@ -1,295 +1,341 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aarogya - Doctor Panel</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --sidebar-w: 250px; }
+        .app-layout { display: flex; min-height: 100vh; }
+        .sidebar { width: var(--sidebar-w); background: linear-gradient(180deg,#064e3b 0%,#065f46 100%); color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; transition: transform 0.3s ease; }
+        .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+        .logo-sm { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+        .brand-sm { font-weight: 700; font-size: 1rem; }
+        .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; overflow-y: auto; }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 10px; border: none; background: transparent; color: rgba(255,255,255,0.65); font-size: 0.875rem; font-weight: 500; cursor: pointer; width: 100%; text-align: left; transition: all 0.2s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; font-weight: 600; }
+        .nav-item.logout { color: #fca5a5; }
+        .nav-item.logout:hover { background: rgba(239,68,68,0.15); }
+        .nav-sep { border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 0.5rem 0; }
+        .nav-icon { font-size: 1.1rem; }
+        .btn-icon { background: rgba(255,255,255,0.1); border: none; color: #fff; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
+        .main-content { margin-left: var(--sidebar-w); flex: 1; background: #f0fdf4; min-height: 100vh; }
+        .top-header { background: #fff; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; gap: 1rem; }
+        .header-left { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+        .user-welcome { display: flex; align-items: center; gap: 0.75rem; }
+        .avatar { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg,#10b981,#059669); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+        .avatar.sm { width: 36px; height: 36px; font-size: 0.875rem; }
+        .btn-menu { background: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; cursor: pointer; display: none; font-size: 1.1rem; }
+        .status-indicator { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-offline { background: #f1f5f9; color: #64748b; }
+        .status-busy { background: #fef3c7; color: #92400e; }
+        .status-inactive { background: #fee2e2; color: #991b1b; }
+
+        .page-body { padding: 1.5rem; }
+        .view-section { animation: fadeIn 0.2s ease; }
+        .view-section.hidden { display: none; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+        .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: #fff; border-radius: 14px; padding: 1.25rem; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #f0fdf4; }
+        .stat-card label { display: block; font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+        .stat-card h2 { font-size: 2rem; font-weight: 800; }
+        .color-primary { color: #4f46e5; }
+        .color-danger { color: #ef4444; }
+        .color-success { color: #10b981; }
+
+        .card { background: #fff; border-radius: 14px; padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; margin-bottom: 1rem; }
+        .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+
+        .btn { padding: 0.7rem 1.25rem; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; min-height: 42px; }
+        .btn-primary { background: #4f46e5; color: #fff; }
+        .btn-primary:hover { background: #3730a3; }
+        .btn-accent { background: #10b981; color: #fff; }
+        .btn-accent:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline { background: transparent; border: 2px solid #e2e8f0; color: #475569; }
+        .btn-outline:hover { border-color: #10b981; color: #10b981; }
+        .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; min-height: 32px; }
+        .btn-large { padding: 1rem 1.5rem; font-size: 1rem; min-height: 52px; }
+        .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .btn-icon-round { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.15); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s; }
+        .btn-icon-round:hover { background: rgba(255,255,255,0.25); }
+        .btn-icon-round.off { background: rgba(239,68,68,0.4); }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 0.75rem 1rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 600; border-bottom: 1px solid #f1f5f9; }
+        td { padding: 0.875rem 1rem; border-bottom: 1px solid #f8fafc; font-size: 0.875rem; }
+        tr:last-child td { border: none; }
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .empty-row td { text-align: center; color: #94a3b8; padding: 2rem; }
+
+        /* Active Consultation */
+        #active-consultation { background: #f0fdf4; }
+        .consultation-grid { display: grid; grid-template-columns: 280px 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .patient-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+        .info-list p { margin-bottom: 0.625rem; font-size: 0.875rem; }
+        .info-list strong { color: #374151; }
+        .vitals-display { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
+        .vital-box { background: #f0fdf4; padding: 0.875rem; border-radius: 10px; text-align: center; border: 1px solid #d1fae5; }
+        .vital-box label { display: block; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem; }
+        .vital-box span { font-size: 1.25rem; font-weight: 700; color: #065f46; }
+        .video-section { background: #0f172a; border-radius: 14px; overflow: hidden; }
+        .video-feed-container { position: relative; background: #0f172a; min-height: 280px; border-radius: 14px 14px 0 0; }
+        .remote-video { width: 100%; height: 280px; object-fit: cover; display: block; }
+        .local-video { position: absolute; bottom: 1rem; right: 1rem; width: 120px; height: 90px; object-fit: cover; border-radius: 10px; border: 2px solid rgba(255,255,255,0.3); }
+        .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; gap: 0.75rem; background: #0f172a; border-radius: 14px 14px 0 0; }
+        .video-placeholder p { opacity: 0.6; font-size: 0.9rem; }
+        .video-controls { display: flex; justify-content: center; gap: 1rem; padding: 1rem; background: rgba(0,0,0,0.3); }
+        .chat-section { display: flex; flex-direction: column; }
+        .chat-section h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; }
+        .chat-box { height: 200px; overflow-y: auto; background: #f8fafc; border-radius: 10px; padding: 0.75rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        .msg { padding: 0.5rem 0.875rem; border-radius: 12px; max-width: 80%; font-size: 0.875rem; }
+        .msg-d { background: #d1fae5; color: #065f46; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg-p { background: #fff; color: #374151; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+        .chat-input-area { display: flex; gap: 0.5rem; }
+        .chat-input-area input { flex: 1; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; }
+        .chat-input-area input:focus { outline: none; border-color: #10b981; }
+        .action-footer { padding: 1rem 0 0; }
+
+        /* Profile */
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .profile-field { padding: 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid #f1f5f9; }
+        .profile-field label { display: block; font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+        .profile-field span { font-weight: 600; color: #0f172a; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; backdrop-filter: blur(4px); }
+        .modal-content { background: #fff; border-radius: 20px; padding: 2rem; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-content h2 { margin-bottom: 1rem; font-size: 1.25rem; }
+        .modal-content textarea { width: 100%; min-height: 150px; padding: 0.875rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; resize: vertical; }
+        .modal-content textarea:focus { outline: none; border-color: #10b981; }
+        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+        .modal-actions .btn { flex: 1; }
+        .hidden { display: none !important; }
+
+        /* Auth */
+        .auth-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg,#064e3b,#065f46,#047857); padding: 2rem 1rem; gap: 1rem; }
+        .auth-logo-box { width: 70px; height: 70px; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; border: 1px solid rgba(255,255,255,0.2); }
+        .auth-title { color: #fff; font-size: 1.75rem; font-weight: 800; }
+        .auth-sub { color: rgba(255,255,255,0.6); font-size: 0.875rem; }
+        .auth-card { background: #fff; border-radius: 20px; padding: 2rem; width: 100%; max-width: 400px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); }
+        .auth-card h1 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .auth-card p { color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem; }
+        .input-group { margin-bottom: 1rem; }
+        .input-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+        .input-group input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; transition: border-color 0.2s; }
+        .input-group input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+        .notice { background: #fef3c7; color: #92400e; padding: 0.875rem; border-radius: 10px; margin-top: 1rem; font-size: 0.875rem; }
+
+        @media (max-width: 767px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.4); }
+            .main-content { margin-left: 0; }
+            .btn-menu { display: flex; }
+            .consultation-grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            .profile-grid { grid-template-columns: 1fr; }
+            .page-body { padding: 1rem; }
+            .top-header { padding: 0.875rem 1rem; }
+            .remote-video { height: 200px; }
+        }
+    </style>
+</head>
 <body>
-    <div id="auth-container" class="panel-container auth-page">
-        <div class="auth-brand">
-            <div class="logo">A</div>
-            <span class="brand-name">Aarogya</span>
-        </div>
-        <div class="card auth-card">
-            <h1>Doctor Login</h1>
-            <p>Access your practitioner dashboard</p>
+    <!-- Auth -->
+    <div id="auth-container" class="auth-page">
+        <div class="auth-logo-box">🩺</div>
+        <div class="auth-title">Doctor Portal</div>
+        <div class="auth-sub">Aarogya Healthcare Platform</div>
+        <div class="auth-card">
+            <h1>Welcome, Doctor</h1>
+            <p>Login to access your practitioner dashboard</p>
             <form id="login-form">
                 <div class="input-group">
-                    <label for="email">Doctor Email</label>
-                    <input type="email" id="email" required placeholder="doctor@hospital.com">
+                    <label>Email Address</label>
+                    <input type="email" id="email" required placeholder="doctor@hospital.com" autocomplete="username">
                 </div>
                 <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required placeholder="••••••••">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn btn-accent" style="width:100%">Authorize</button>
+                <button type="submit" class="btn btn-accent" style="width:100%">🔑 Authorize</button>
             </form>
-            <div id="approval-notice" class="notice hidden">
-                Your account is pending admin approval. Please contact the administrator.
-            </div>
+            <div id="approval-notice" class="notice hidden">Your account is pending admin approval. Please contact the administrator.</div>
         </div>
     </div>
 
-    <!-- Main Panel with Sidebar Layout -->
+    <!-- Main Panel -->
     <div id="main-panel" class="app-layout hidden">
-        <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="logo-sm">A</div>
-                <span class="brand-sm">Aarogya</span>
-                <button id="close-sidebar" class="btn-icon mobile-only">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                    </svg>
-                </button>
+                <div style="display:flex;align-items:center;gap:0.6rem">
+                    <div class="logo-sm">A</div>
+                    <span class="brand-sm">Aarogya</span>
+                </div>
+                <button id="close-sidebar" class="btn-icon">✕</button>
             </div>
-
             <nav class="sidebar-nav">
-                <button class="nav-item active" data-section="dashboard">
-                    <span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
-                        </svg></span>
-                    Dashboard
-                </button>
-                <button class="nav-item" data-section="profile">
-                    <span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path
-                                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                        </svg></span>
-                    My Profile
-                </button>
-                <button class="nav-item" data-section="history">
-                    <span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path
-                                d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
-                        </svg></span>
-                    Consultation History
-                </button>
-                <button class="nav-item" data-section="patients">
-                    <span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path
-                                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                        </svg></span>
-                    All Patients
-                </button>
-                <hr style="margin: 1rem 0; border:0; border-top:1px solid #e2e8f0; width:100%;">
-                <button id="logout-btn" class="nav-item logout">
-                    <span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            fill="currentColor">
-                            <path
-                                d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-                        </svg></span>
-                    Logout
-                </button>
+                <button class="nav-item active" data-section="dashboard"><span class="nav-icon">📊</span> Dashboard</button>
+                <button class="nav-item" data-section="profile"><span class="nav-icon">👤</span> My Profile</button>
+                <button class="nav-item" data-section="history"><span class="nav-icon">📋</span> All Consultations</button>
+                <button class="nav-item" data-section="patients"><span class="nav-icon">🧑‍🤝‍🧑</span> All Patients</button>
+                <hr class="nav-sep">
+                <button id="logout-btn" class="nav-item logout"><span class="nav-icon">🚪</span> Logout</button>
             </nav>
         </aside>
 
-        <main class="main-content">
+        <div class="main-content">
             <header class="top-header">
                 <div class="header-left">
-                    <button id="menu-toggle" class="btn-icon mobile-only">
-                        <span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                fill="currentColor">
-                                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
-                            </svg></span>
-                    </button>
+                    <button id="menu-toggle" class="btn-menu">☰</button>
                     <div class="user-welcome">
-                        <span class="avatar sm doctor">D</span>
+                        <div class="avatar sm">D</div>
                         <div>
-                            <h3 id="doctor-name">Dr. Loading...</h3>
-                            <span id="doctor-id" class="badge">ID: --</span>
+                            <div style="font-weight:700;font-size:0.95rem" id="doctor-name">Dr. Loading...</div>
+                            <span id="doctor-id" style="font-size:0.72rem;color:#94a3b8">ID: --</span>
                         </div>
                     </div>
                 </div>
-                <div class="header-right">
-                    <span id="live-status" class="status-indicator status-offline">OFFLINE</span>
-                </div>
+                <span id="live-status" class="status-indicator status-offline">OFFLINE</span>
             </header>
 
-            <!-- Dashboard View -->
-            <section id="dashboard-view" class="view-section active">
-                <div class="doctor-stats-grid">
-                    <div class="stat-card card">
-                        <label>Total Patients</label>
-                        <h2 id="stat-patients">0</h2>
+            <div class="page-body">
+                <!-- Dashboard -->
+                <div id="dashboard-view" class="view-section">
+                    <div class="stats-row">
+                        <div class="stat-card"><label>Total Patients</label><h2 class="color-primary" id="stat-patients">0</h2></div>
+                        <div class="stat-card"><label>Today's Sessions</label><h2 class="color-success" id="stat-today">0</h2></div>
+                        <div class="stat-card"><label>Emergencies</label><h2 class="color-danger" id="stat-emergencies">0</h2></div>
                     </div>
-                    <div class="stat-card card">
-                        <label>Sessions Today</label>
-                        <h2 id="stat-today" class="color-primary">0</h2>
+                    <div class="card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #bbf7d0">
+                        <p style="font-size:0.875rem;color:#065f46">🟢 You are <strong>ONLINE</strong> — Patients can request consultations with you.</p>
                     </div>
-                    <div class="stat-card card">
-                        <label>Emergencies</label>
-                        <h2 id="stat-emergencies" class="color-danger">0</h2>
-                    </div>
-                </div>
-
-                <div class="centered card empty-state" style="margin-bottom:1.5rem;">
-                    <img src="https://img.icons8.com/ios/80/stethoscope.png" alt="Stethoscope" style="opacity:0.6;">
-                    <h3>Awaiting Patient Assignment</h3>
-                    <p>You are online and active. Patients will be assigned automatically.</p>
-                </div>
-
-                <section class="history-section">
-                    <h3 style="margin-bottom:1rem;">Recent Consultations</h3>
-                    <div class="card table-card">
-                        <table id="history-table">
-                            <thead>
-                                <tr>
-                                    <th>Patient</th>
-                                    <th>Date</th>
-                                    <th>Duration</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-list">
-                                <!-- JS populated -->
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </section>
-
-            <!-- Profile View -->
-            <section id="profile-view" class="view-section hidden">
-                <div class="card profile-card">
-                    <h2>My Profile</h2>
-                    <div id="doctor-profile-info" class="info-list" style="margin-top:1.5rem;">
-                        <p><strong>Name:</strong> <span id="doc-profile-name">--</span></p>
-                        <p><strong>Email:</strong> <span id="doc-profile-email">--</span></p>
-                        <p><strong>Specialization:</strong> <span id="doc-profile-spec">General Physician</span></p>
-                        <p><strong>Status:</strong> <span id="doc-profile-status">--</span></p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- History View -->
-            <section id="history-view" class="view-section hidden">
-                <h2>All Consultations</h2>
-                <div class="card table-card mt-4">
-                    <div id="full-history-list">
-                        <!-- Full history table/list -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Patients View -->
-            <section id="patients-view" class="view-section hidden">
-                <h2>All Patients</h2>
-                <div class="card table-card mt-4">
-                    <div id="all-patients-list">
-                        <p class="text-muted">Patient list will appear here.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Active Consultation View -->
-            <div id="active-consultation" class="hidden">
-                <div class="consultation-grid">
-                    <div class="patient-sidebar">
-                        <div class="card patient-card">
-                            <h3 style="margin-bottom:1rem;">Patient Details</h3>
-                            <div class="info-list">
-                                <p><strong>Name:</strong> <span id="p-name">--</span></p>
-                                <p><strong>Age:</strong> <span id="p-age">--</span></p>
-                                <p><strong>Blood:</strong> <span id="p-blood">--</span></p>
-                                <p><strong>Symptoms:</strong> <span id="p-symptoms"
-                                        style="color:var(--primary); font-weight:500;">--</span></p>
-                            </div>
-                        </div>
-
-                        <div class="card vitals-card">
-                            <h3 style="margin-bottom:1rem;">Live Vitals</h3>
-                            <div class="vitals-display">
-                                <div class="vital-box">
-                                    <label>BP</label>
-                                    <span id="v-bp">--</span>
-                                </div>
-                                <div class="vital-box">
-                                    <label>Temp</label>
-                                    <span id="v-temp">--</span>
-                                </div>
-                                <div class="vital-box">
-                                    <label>Sugar</label>
-                                    <span id="v-sugar">--</span>
-                                </div>
-                                <div class="vital-box">
-                                    <label>SpO2</label>
-                                    <span id="v-spo2">--</span>
-                                </div>
-                            </div>
-                            <p id="v-updated" style="font-size:0.7rem; color:var(--text-muted); text-align:right; margin-top:0.5rem;"></p>
-                        </div>
-
-                        <div class="card reports-card">
-                            <h3 style="margin-bottom:1rem;">Patient Reports</h3>
-                            <div id="patient-reports-list" class="reports-list">
-                                <p class="text-muted" style="font-size:0.9rem;">No reports uploaded</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="main-consultation-area">
-                        <div class="video-section card">
-                            <div class="video-feed-container">
-                                <video id="remote-video" autoplay playsinline class="remote-video"></video>
-                                <video id="local-video" autoplay playsinline muted class="local-video"></video>
-                                <div id="video-placeholder" class="video-placeholder">
-                                    <img src="https://img.icons8.com/ios-filled/100/ffffff/video-call.png" alt="Video">
-                                    <p>Connecting to Patient...</p>
-                                </div>
-                            </div>
-                            <div class="video-controls">
-                                <button id="toggle-video" class="btn btn-icon-round"><span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></span></button>
-                                <button id="toggle-audio" class="btn btn-icon-round"><span class="icon-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></span></button>
-                            </div>
-                        </div>
-
-                        <div class="chat-section card">
-                            <h4 style="margin-bottom:0.75rem;">Chat with Patient</h4>
-                            <div id="chat-messages" class="chat-box"></div>
-                            <div class="chat-input-area">
-                                <input type="text" id="chat-input" placeholder="Send advice to patient...">
-                                <button id="send-btn" class="btn btn-primary">Send</button>
-                            </div>
+                    <div class="card">
+                        <h3>Recent Consultations</h3>
+                        <div class="table-wrap">
+                            <table><thead><tr><th>Patient</th><th>Symptoms</th><th>Date</th><th>Duration</th><th>Status</th></tr></thead>
+                            <tbody id="history-list"><tr class="empty-row"><td colspan="5">No consultations yet.</td></tr></tbody></table>
                         </div>
                     </div>
                 </div>
 
-                <div class="action-footer">
-                    <button id="end-session-btn" class="btn btn-danger btn-large" style="width:100%">End Consultation &
-                        Write Prescription</button>
+                <!-- Profile -->
+                <div id="profile-view" class="view-section hidden">
+                    <div class="card">
+                        <h3>👤 My Profile</h3>
+                        <div class="profile-grid">
+                            <div class="profile-field"><label>Full Name</label><span id="doc-profile-name">--</span></div>
+                            <div class="profile-field"><label>Email</label><span id="doc-profile-email">--</span></div>
+                            <div class="profile-field"><label>Specialization</label><span id="doc-profile-spec">--</span></div>
+                            <div class="profile-field"><label>Experience</label><span id="doc-profile-exp">--</span></div>
+                            <div class="profile-field"><label>Phone</label><span id="doc-profile-phone">--</span></div>
+                            <div class="profile-field"><label>Account Status</label><span id="doc-profile-status">--</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div id="history-view" class="view-section hidden">
+                    <div class="card">
+                        <h3>📋 All Consultations</h3>
+                        <div class="table-wrap">
+                            <table><thead><tr><th>Patient</th><th>Symptoms</th><th>Date</th><th>Duration</th><th>Status</th></tr></thead>
+                            <tbody id="full-history-list"><tr class="empty-row"><td colspan="5">No consultations yet.</td></tr></tbody></table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Patients -->
+                <div id="patients-view" class="view-section hidden">
+                    <div class="card">
+                        <h3>🧑‍🤝‍🧑 All Patients</h3>
+                        <div id="all-patients-list" class="table-wrap"><p style="color:#94a3b8;text-align:center;padding:2rem">Loading...</p></div>
+                    </div>
+                </div>
+
+                <!-- Active Consultation -->
+                <div id="active-consultation" class="hidden">
+                    <div class="consultation-grid">
+                        <div class="patient-sidebar">
+                            <div class="card">
+                                <h3>🧑 Patient Details</h3>
+                                <div class="info-list">
+                                    <p><strong>Name:</strong> <span id="p-name">--</span></p>
+                                    <p><strong>Age:</strong> <span id="p-age">--</span></p>
+                                    <p><strong>Blood:</strong> <span id="p-blood">--</span></p>
+                                    <p><strong>Gender:</strong> <span id="p-gender">--</span></p>
+                                    <p><strong>Symptoms:</strong> <span id="p-symptoms" style="color:#065f46;font-weight:600">--</span></p>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <h3>📊 Live Vitals</h3>
+                                <div class="vitals-display">
+                                    <div class="vital-box"><label>BP</label><span id="v-bp">--</span></div>
+                                    <div class="vital-box"><label>Temp °F</label><span id="v-temp">--</span></div>
+                                    <div class="vital-box"><label>Sugar</label><span id="v-sugar">--</span></div>
+                                    <div class="vital-box"><label>SpO2 %</label><span id="v-spo2">--</span></div>
+                                </div>
+                                <p id="v-updated" style="font-size:0.72rem;color:#94a3b8;margin-top:0.5rem;text-align:right"></p>
+                            </div>
+                            <div class="card">
+                                <h3>📁 Patient Reports</h3>
+                                <div id="patient-reports-list"><p style="color:#94a3b8;font-size:0.875rem">No reports uploaded.</p></div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:1rem">
+                            <div class="video-section">
+                                <div class="video-feed-container">
+                                    <video id="remote-video" autoplay playsinline class="remote-video"></video>
+                                    <video id="local-video" autoplay playsinline muted class="local-video"></video>
+                                    <div id="video-placeholder" class="video-placeholder">
+                                        <div style="font-size:3rem">📹</div>
+                                        <p>Connecting to Patient...</p>
+                                    </div>
+                                </div>
+                                <div class="video-controls">
+                                    <button id="toggle-video" class="btn-icon-round" title="Toggle Camera">📷</button>
+                                    <button id="toggle-audio" class="btn-icon-round" title="Toggle Mic">🎙</button>
+                                </div>
+                            </div>
+                            <div class="card chat-section">
+                                <h4>💬 Chat with Patient</h4>
+                                <div id="chat-messages" class="chat-box"></div>
+                                <div class="chat-input-area">
+                                    <input type="text" id="chat-input" placeholder="Send advice or instructions...">
+                                    <button id="send-btn" class="btn btn-accent">Send</button>
+                                </div>
+                            </div>
+                            <div class="action-footer">
+                                <button id="end-session-btn" class="btn btn-danger btn-large" style="width:100%">✍️ End & Write Prescription</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <!-- Modal for Prescription -->
+    <!-- Prescription Modal -->
     <div id="prescription-modal" class="modal hidden">
         <div class="modal-content">
-            <h2>Final Prescription</h2>
-            <p style="color:#64748b;margin-bottom:1rem;font-size:0.9rem;">Enter medicines, dosage, and advice for the
-                patient.</p>
-            <textarea id="prescription-text"
-                placeholder="1. Medicine Name - Dosage - Duration&#10;2. ...&#10;&#10;Advice:&#10;- Rest for 2 days&#10;- Drink plenty of water"></textarea>
+            <h2>📝 Write Prescription</h2>
+            <p style="color:#64748b;font-size:0.875rem;margin-bottom:1rem">Enter medicines, dosage, and advice for the patient.</p>
+            <textarea id="prescription-text" placeholder="1. Paracetamol 500mg - 1 tablet TDS x 3 days&#10;2. Cetirizine 10mg - 1 tablet at night&#10;&#10;Advice:&#10;- Rest for 2 days&#10;- Drink plenty of fluids&#10;- Follow up if symptoms persist"></textarea>
             <div class="modal-actions">
                 <button id="cancel-prescription-btn" class="btn btn-outline">Cancel</button>
-                <button id="confirm-end-btn" class="btn btn-primary">Complete & Send Prescription</button>
+                <button id="confirm-end-btn" class="btn btn-primary">✅ Complete & Send</button>
             </div>
         </div>
     </div>
 
     <script type="module" src="./scripts/doctor.js"></script>
 </body>
-
 </html>

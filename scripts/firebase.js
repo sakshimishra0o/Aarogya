@@ -4,7 +4,6 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Aarogya Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyB5PsgVUGeHAyXjzuU7Yqw9QhN8wY0ssIA",
     authDomain: "aarogya-281e3.firebaseapp.com",

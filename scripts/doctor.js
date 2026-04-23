@@ -1,30 +1,14 @@
-// Doctor Panel - Improved with Better Session Handling
+// Doctor Panel - Full Working
 import { db, auth, storage } from './firebase.js';
 import { checkAuth, login, logout } from './auth.js';
-import {
-    ref, set, push, onValue, update, get, onDisconnect, off, query, orderByChild, equalTo
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import {
-    uploadString, ref as sRef, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { ref, set, push, onValue, update, get, onDisconnect, off, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Initialize Auth Check - MOVED TO BOTTOM TO PREVENT RACE CONDITION
-// checkAuth('doctor');
+let currentDoctor = null, currentDoctorData = null;
+let currentSessionId = null, currentPatientId = null;
+let heartbeatInterval = null, sessionListener = null, chatListener = null;
+let pc = null, localStream = null;
+const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }], iceCandidatePoolSize: 10 };
 
-let currentDoctor = null;
-let currentDoctorData = null;
-let currentSessionId = null;
-let currentPatientId = null;
-let pc = null;
-let localStream = null;
-const servers = {
-    iceServers: [
-        { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
-    ],
-    iceCandidatePoolSize: 10,
-};
-
-// Views
 const views = {
     dashboard: document.getElementById('dashboard-view'),
     profile: document.getElementById('profile-view'),
@@ -32,762 +16,347 @@ const views = {
     patients: document.getElementById('patients-view')
 };
 
-// DOM Elements
-const loginForm = document.getElementById('login-form');
-const logoutBtn = document.getElementById('logout-btn');
-const liveStatus = document.getElementById('live-status');
-const noPatientView = document.getElementById('no-patient-view');
-const activeConsultation = document.getElementById('active-consultation');
-const chatMessages = document.getElementById('chat-messages');
-const chatInput = document.getElementById('chat-input');
-const sendBtn = document.getElementById('send-btn');
-const endSessionBtn = document.getElementById('end-session-btn');
-const prescriptionModal = document.getElementById('prescription-modal');
-const confirmEndBtn = document.getElementById('confirm-end-btn');
-const sidebar = document.getElementById('sidebar');
-const closeSidebarBtn = document.getElementById('close-sidebar');
-const menuToggleBtn = document.getElementById('menu-toggle');
-
-// Navigation Handler
+// Navigation
 document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
         const section = btn.dataset.section;
-        switchView(section);
-
-        // Close sidebar on mobile
-        if (window.innerWidth <= 768) {
-            sidebar?.classList.remove('open');
+        if (section !== 'dashboard') {
+            const ac = document.getElementById('active-consultation');
+            if (ac && !ac.classList.contains('hidden')) {
+                showToast('End current consultation before navigating.', 'warning'); return;
+            }
         }
+        switchView(section);
+        if (window.innerWidth <= 768) document.getElementById('sidebar')?.classList.remove('open');
     });
 });
 
-function switchView(viewName) {
-    console.log('Switching to view:', viewName);
-
-    // Hide active consultation if viewing other sections
-    if (viewName !== 'dashboard') {
-        const activeConsultation = document.getElementById('active-consultation');
-        if (activeConsultation && !activeConsultation.classList.contains('hidden')) {
-            // Don't allow switching away if in active consultation
-            alert('Please end the current consultation before navigating away.');
-            console.warn('Prevented navigation - active consultation');
-            return;
-        }
-    }
-
-    // Update active nav item
+function switchView(name) {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    const activeBtn = document.querySelector(`.nav-item[data-section="${viewName}"]`);
-    if (activeBtn) {
-        activeBtn.classList.add('active');
-        console.log('Activated nav button:', viewName);
-    } else {
-        console.error('Nav button not found for:', viewName);
-    }
-
-    // Show selected view, hide others
-    Object.entries(views).forEach(([key, el]) => {
-        if (el) {
-            el.classList.add('hidden');
-            if (key === viewName) {
-                el.classList.remove('hidden');
-                el.classList.add('active');
-                console.log('Displaying view:', viewName);
-            }
-        } else {
-            console.warn('View element not found:', key);
-        }
+    document.querySelector(`.nav-item[data-section="${name}"]`)?.classList.add('active');
+    Object.entries(views).forEach(([k, el]) => {
+        if (el) el.classList.toggle('hidden', k !== name);
     });
 }
 
-// Sidebar Toggle (Mobile)
-menuToggleBtn?.addEventListener('click', () => {
-    sidebar?.classList.add('open');
-    document.body.style.overflow = 'hidden'; // Prevent background scroll
+// Mobile sidebar
+document.getElementById('menu-toggle')?.addEventListener('click', () => document.getElementById('sidebar')?.classList.add('open'));
+document.getElementById('close-sidebar')?.addEventListener('click', () => document.getElementById('sidebar')?.classList.remove('open'));
+document.addEventListener('click', e => {
+    const sb = document.getElementById('sidebar');
+    if (window.innerWidth <= 768 && sb?.classList.contains('open') && !sb.contains(e.target) && !document.getElementById('menu-toggle')?.contains(e.target))
+        sb.classList.remove('open');
 });
 
-closeSidebarBtn?.addEventListener('click', () => {
-    sidebar?.classList.remove('open');
-    document.body.style.overflow = ''; // Restore scroll
-});
-
-// Close sidebar when clicking outside on mobile
-document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768) {
-        if (sidebar?.classList.contains('open') &&
-            !sidebar.contains(e.target) &&
-            !menuToggleBtn?.contains(e.target)) {
-            sidebar.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-    }
-});
-
-// Login Handler
-loginForm?.addEventListener('submit', async (e) => {
+// Login
+document.getElementById('login-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.innerText;
-
+    btn.disabled = true; btn.textContent = 'Signing in...';
     try {
-        btn.disabled = true;
-        btn.innerText = 'Signing in...';
-
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-
-        await login(email, password, 'doctor');
-
-    } catch (error) {
-        alert(error.message);
-        btn.disabled = false;
-        btn.innerText = originalText;
-    }
+        await login(document.getElementById('email').value.trim(), document.getElementById('password').value, 'doctor');
+    } catch (err) { showToast(err.message, 'error'); btn.disabled = false; btn.textContent = 'Authorize'; }
 });
 
-// Logout Handler
-logoutBtn?.addEventListener('click', async () => {
-    try {
-        // Stop heartbeat
-        if (heartbeatInterval) {
-            clearInterval(heartbeatInterval);
-            heartbeatInterval = null;
-        }
-
-        // Set doctor offline
-        if (currentDoctor) {
-            await update(ref(db, `users/doctors/${currentDoctor.uid}`), {
-                status: 'INACTIVE',
-                busy: false,
-                lastActiveTime: Date.now()
-            });
-        }
-
-        await logout();
-    } catch (error) {
-        console.error('Logout error:', error);
-        await logout();
-    }
+// Logout
+document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    if (currentDoctor) await update(ref(db, `users/doctors/${currentDoctor.uid}`), { status: 'INACTIVE', busy: false, lastActiveTime: Date.now() }).catch(() => {});
+    logout();
 });
 
-// Heartbeat System - Keep Doctor "Online"
+// Heartbeat
 function startHeartbeat(uid) {
-    console.log('Starting heartbeat for doctor:', uid);
-
-    const statusRef = ref(db, `doctorStatus/${uid}`);
     const doctRef = ref(db, `users/doctors/${uid}`);
-
-    // Set initial status
-    update(doctRef, {
-        status: 'ACTIVE',
-        lastActiveTime: Date.now()
-    });
-
-    // Set to offline on disconnect
+    const statusRef = ref(db, `doctorStatus/${uid}`);
+    update(doctRef, { status: 'ACTIVE', lastActiveTime: Date.now() });
+    onDisconnect(doctRef).update({ status: 'INACTIVE', busy: false });
     onDisconnect(statusRef).remove();
-    onDisconnect(doctRef).update({
-        status: 'INACTIVE',
-        busy: false
-    });
-
-    // Heartbeat every 10 seconds
-    heartbeatInterval = setInterval(() => {
+    const setOnline = () => {
         const now = Date.now();
-
-        set(statusRef, {
-            lastActiveTime: now,
-            status: 'ACTIVE'
-        });
-
-        update(doctRef, {
-            status: 'ACTIVE',
-            lastActiveTime: now
-        });
-
-        // Update UI status
-        if (liveStatus) {
-            liveStatus.innerText = 'ONLINE';
-            liveStatus.className = 'status-indicator status-active';
-        }
-    }, 10000);
-
-    // Immediate first beat
-    if (liveStatus) {
-        liveStatus.innerText = 'ONLINE';
-        liveStatus.className = 'status-indicator status-active';
-    }
+        set(statusRef, { lastActiveTime: now, status: 'ACTIVE' });
+        update(doctRef, { status: 'ACTIVE', lastActiveTime: now });
+        const ls = document.getElementById('live-status');
+        if (ls) { ls.textContent = 'ONLINE'; ls.className = 'status-indicator status-active'; }
+    };
+    setOnline();
+    heartbeatInterval = setInterval(setOnline, 10000);
 }
 
-// Monitor Doctor's Session Assignment
-async function monitorSessions(uid) {
-    console.log('Monitoring sessions for doctor:', uid);
-
-    // Listen for session assignment
-    onValue(ref(db, `users/doctors/${uid}`), async (snapshot) => {
-        const data = snapshot.val();
-        currentDoctorData = data;
-
+// Monitor sessions
+function monitorSessions(uid) {
+    onValue(ref(db, `users/doctors/${uid}`), async snap => {
+        const data = snap.val(); currentDoctorData = data;
         if (data?.activeSessionId && data.activeSessionId !== currentSessionId) {
-            // Validate session exists and is still active
-            const sessionSnap = await get(ref(db, `sessions/${data.activeSessionId}`));
-            const session = sessionSnap.val();
-
+            const sSnap = await get(ref(db, `sessions/${data.activeSessionId}`));
+            const session = sSnap.val();
             if (session && session.status === 'ACTIVE' && !session.endTime) {
                 currentSessionId = data.activeSessionId;
-                console.log('New session assigned:', currentSessionId);
-
-                // Alert the doctor!
-                alert(`New Patient Request: ${session.patientName || 'Patient'} needs consultation!\nSymptoms: ${session.symptoms || 'Not specified'}`);
-
+                showNotification(`🔔 New Patient: ${session.patientName || 'Patient'}\nSymptoms: ${session.symptoms || 'N/A'}`);
                 showConsultation(currentSessionId);
             } else {
-                // Session ended or doesn't exist - clear stale data
-                console.log('Stale session detected, clearing...');
-                await update(ref(db, `users/doctors/${uid}`), {
-                    activeSessionId: null,
-                    busy: false
-                });
-                if (currentSessionId) {
-                    currentSessionId = null;
-                    hideConsultation();
-                }
+                await update(ref(db, `users/doctors/${uid}`), { activeSessionId: null, busy: false }).catch(() => {});
+                if (currentSessionId) { currentSessionId = null; hideConsultation(); }
             }
         } else if (!data?.activeSessionId && currentSessionId) {
-            console.log('Session ended');
-            stopVideoCall();
-            currentSessionId = null;
-            hideConsultation();
+            stopVideoCall(); currentSessionId = null; hideConsultation();
         }
     });
 }
 
-// Show Consultation UI
 function showConsultation(sid) {
-    console.log('Showing consultation:', sid);
-
-    // Switch to dashboard view
     switchView('dashboard');
+    document.getElementById('dashboard-view')?.classList.add('hidden');
+    document.getElementById('active-consultation')?.classList.remove('hidden');
 
-    const dashboard = document.getElementById('dashboard-view');
-    if (dashboard) dashboard.classList.add('hidden');
-    if (activeConsultation) activeConsultation.classList.remove('hidden');
-
-    // Clear previous listeners
     if (sessionListener) off(sessionListener);
     if (chatListener) off(chatListener);
 
-    // Load Session Data
-    const sessionRef = ref(db, `sessions/${sid}`);
-    onValue(sessionRef, (snap) => {
-        const session = snap.val();
-        if (!session) return;
-
-        // Store patient ID for reports
+    sessionListener = ref(db, `sessions/${sid}`);
+    onValue(sessionListener, snap => {
+        const session = snap.val(); if (!session) return;
         currentPatientId = session.patientId;
-
-        // Update patient info
         const nameEl = document.getElementById('p-name');
         if (nameEl) {
-            nameEl.innerText = session.patientName || 'Patient';
-            if (session.emergency) {
-                nameEl.innerHTML = nameEl.innerText + ' <span class="icon-svg" style="color:#ef4444;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></span> EMERGENCY';
-                nameEl.style.color = '#ef4444';
-            }
+            nameEl.innerHTML = `${session.patientName || 'Patient'}${session.emergency ? ' <span style="color:#ef4444">⚠ EMERGENCY</span>' : ''}`;
+            if (session.emergency) nameEl.style.color = '#ef4444';
         }
-
-        // Update Symptoms
         const sxEl = document.getElementById('p-symptoms');
-        if (sxEl) sxEl.innerText = session.symptoms || 'Not specified';
-
-        // Load patient details
-        if (session.patientId) {
-            get(ref(db, `users/patients/${session.patientId}`)).then(patientSnap => {
-                const patient = patientSnap.val();
-                if (patient) {
-                    const ageEl = document.getElementById('p-age');
-                    const bloodEl = document.getElementById('p-blood');
-                    if (ageEl) ageEl.innerText = patient.age || '--';
-                    if (bloodEl) bloodEl.innerText = patient.bloodGroup || '--';
-                }
-            });
-
-            // Load patient reports
-            loadPatientReportsForDoctor(session.patientId);
-        }
-
-        // Load health data
+        if (sxEl) sxEl.textContent = session.symptoms || 'Not specified';
         if (session.healthData) {
             const hd = session.healthData;
-            const bpEl = document.getElementById('v-bp');
-            const tempEl = document.getElementById('v-temp');
-            const sugarEl = document.getElementById('v-sugar');
-            const spo2El = document.getElementById('v-spo2');
-
-            if (bpEl) bpEl.innerText = hd.bp || '--';
-            if (tempEl) tempEl.innerText = hd.temp || '--';
-            if (sugarEl) sugarEl.innerText = hd.sugar || '--';
-            if (spo2El) spo2El.innerText = hd.spo2 || '--';
-
-            const updatedEl = document.getElementById('v-updated');
-            if (updatedEl && hd.updatedAt) {
-                updatedEl.innerText = `Last Updated: ${new Date(hd.updatedAt).toLocaleTimeString()}`;
-            }
+            ['bp','temp','sugar','spo2'].forEach(k => { const el = document.getElementById(`v-${k}`); if (el) el.textContent = hd[k] || '--'; });
+            const updEl = document.getElementById('v-updated');
+            if (updEl && hd.updatedAt) updEl.textContent = `Updated: ${new Date(hd.updatedAt).toLocaleTimeString()}`;
+        }
+        if (session.patientId) {
+            get(ref(db, `users/patients/${session.patientId}`)).then(pSnap => {
+                const p = pSnap.val(); if (!p) return;
+                const ageEl = document.getElementById('p-age'); if (ageEl) ageEl.textContent = p.age || '--';
+                const bloodEl = document.getElementById('p-blood'); if (bloodEl) bloodEl.textContent = p.bloodGroup || '--';
+                const genEl = document.getElementById('p-gender'); if (genEl) genEl.textContent = p.gender || '--';
+            });
+            loadPatientReports(session.patientId);
         }
     });
 
-    // Initialize Video Call Answering
-    setTimeout(() => {
-        setupWebRTC(sid, 'doctor');
-    }, 1000);
-
-    // Load Chat Messages
-    const chatRef = ref(db, `sessions/${sid}/chat`);
-    onValue(chatRef, (snap) => {
-        if (!chatMessages) return;
-
-        chatMessages.innerHTML = '';
-        const msgs = snap.val() || {};
-
-        Object.values(msgs).forEach(m => {
+    chatListener = ref(db, `sessions/${sid}/chat`);
+    onValue(chatListener, snap => {
+        const chatBox = document.getElementById('chat-messages'); if (!chatBox) return;
+        chatBox.innerHTML = '';
+        Object.values(snap.val() || {}).forEach(m => {
             const div = document.createElement('div');
             div.className = `msg msg-${m.role === 'doctor' ? 'd' : 'p'}`;
-            div.innerText = m.text;
-            chatMessages.appendChild(div);
+            div.textContent = m.text;
+            chatBox.appendChild(div);
         });
-
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        chatBox.scrollTop = chatBox.scrollHeight;
     });
+
+    setTimeout(() => setupWebRTC(sid, 'doctor'), 1200);
 }
 
-// ==========================================
-/* ===== WebRTC SIGNALING LOGIC ===== */
-// ==========================================
+function hideConsultation() {
+    document.getElementById('active-consultation')?.classList.add('hidden');
+    document.getElementById('dashboard-view')?.classList.remove('hidden');
+    const chatBox = document.getElementById('chat-messages'); if (chatBox) chatBox.innerHTML = '';
+    currentPatientId = null;
+}
 
+// WebRTC
 async function setupWebRTC(sid, role) {
-    console.log(`Setting up WebRTC for ${role} in session ${sid}`);
     const localVideo = document.getElementById('local-video');
     const remoteVideo = document.getElementById('remote-video');
     const placeholder = document.getElementById('video-placeholder');
-
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         if (localVideo) localVideo.srcObject = localStream;
-
         pc = new RTCPeerConnection(servers);
-
-        localStream.getTracks().forEach((track) => {
-            pc.addTrack(track, localStream);
-        });
-
-        pc.ontrack = (event) => {
-            console.log('Got remote track:', event.streams[0]);
-            if (remoteVideo) {
-                remoteVideo.srcObject = event.streams[0];
-                if (placeholder) placeholder.classList.add('hidden');
-            }
-        };
-
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+        pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
-
-        // Doctor is the answerer
-        onValue(sessionRef, async (snapshot) => {
-            const data = snapshot.val();
+        onValue(sessionRef, async snap => {
+            const data = snap.val();
             if (!pc.currentRemoteDescription && data?.offer) {
-                const offerDescription = new RTCSessionDescription(data.offer);
-                await pc.setRemoteDescription(offerDescription);
-
-                const answerDescription = await pc.createAnswer();
-                await pc.setLocalDescription(answerDescription);
-
-                const answer = {
-                    sdp: answerDescription.sdp,
-                    type: answerDescription.type,
-                };
-
-                await update(sessionRef, { answer });
-                console.log('Answer sent successfully');
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const ans = await pc.createAnswer();
+                await pc.setLocalDescription(ans);
+                await update(sessionRef, { answer: { sdp: ans.sdp, type: ans.type } });
             }
         });
-
-        // Push ICE candidates
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                const candidatesRef = push(ref(db, `sessions/${sid}/webrtc/${role}Candidates`));
-                set(candidatesRef, event.candidate.toJSON());
-            }
-        };
-
-        // Listen for remote ICE candidates
-        const remoteRole = role === 'patient' ? 'doctor' : 'patient';
-        onValue(ref(db, `sessions/${sid}/webrtc/${remoteRole}Candidates`), (snapshot) => {
-            snapshot.forEach((child) => {
-                const data = child.val();
-                if (data) {
-                    const candidate = new RTCIceCandidate(data);
-                    pc.addIceCandidate(candidate);
-                }
-            });
+        pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/doctorCandidates`)), e.candidate.toJSON()); };
+        onValue(ref(db, `sessions/${sid}/webrtc/patientCandidates`), snap => {
+            snap.forEach(child => { const d = child.val(); if (d) pc.addIceCandidate(new RTCIceCandidate(d)).catch(() => {}); });
         });
-
-        // Setup Controls
         setupVideoControls();
-
     } catch (err) {
-        console.error('WebRTC Error:', err);
-        if (placeholder) placeholder.innerHTML = `<p style="color:var(--danger)">Camera Access Denied</p>`;
+        console.error('WebRTC:', err);
+        if (placeholder) placeholder.innerHTML = '<p style="color:#ef4444;padding:1rem">📷 Camera access denied</p>';
     }
 }
 
 function setupVideoControls() {
-    const toggleVideo = document.getElementById('toggle-video');
-    const toggleAudio = document.getElementById('toggle-audio');
-
-    toggleVideo?.addEventListener('click', () => {
-        const videoTrack = localStream.getVideoTracks()[0];
-        videoTrack.enabled = !videoTrack.enabled;
-        toggleVideo.classList.toggle('off', !videoTrack.enabled);
+    document.getElementById('toggle-video')?.addEventListener('click', function() {
+        if (!localStream) return;
+        const t = localStream.getVideoTracks()[0]; if (!t) return;
+        t.enabled = !t.enabled; this.classList.toggle('off', !t.enabled);
     });
-
-    toggleAudio?.addEventListener('click', () => {
-        const audioTrack = localStream.getAudioTracks()[0];
-        audioTrack.enabled = !audioTrack.enabled;
-        toggleAudio.classList.toggle('off', !audioTrack.enabled);
+    document.getElementById('toggle-audio')?.addEventListener('click', function() {
+        if (!localStream) return;
+        const t = localStream.getAudioTracks()[0]; if (!t) return;
+        t.enabled = !t.enabled; this.classList.toggle('off', !t.enabled);
     });
 }
 
 function stopVideoCall() {
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-    }
-    if (pc) {
-        pc.close();
-    }
+    localStream?.getTracks().forEach(t => t.stop()); localStream = null;
+    pc?.close(); pc = null;
 }
 
-// Hide Consultation UI
-function hideConsultation() {
-    if (activeConsultation) activeConsultation.classList.add('hidden');
-    const dashboard = document.getElementById('dashboard-view');
-    if (dashboard) dashboard.classList.remove('hidden');
-
-    // Clear chat
-    if (chatMessages) chatMessages.innerHTML = '';
-    currentPatientId = null;
-}
-
-// Send Chat Message
+// Chat
 async function sendMessage() {
-    const text = chatInput?.value?.trim();
+    const input = document.getElementById('chat-input');
+    const text = input?.value?.trim();
     if (!text || !currentSessionId) return;
-
     try {
-        const msgRef = push(ref(db, `sessions/${currentSessionId}/chat`));
-        await set(msgRef, {
-            role: 'doctor',
-            text,
-            timestamp: Date.now()
-        });
-
-        if (chatInput) chatInput.value = '';
-    } catch (error) {
-        console.error('Send message error:', error);
-        alert('Failed to send message');
-    }
+        await set(push(ref(db, `sessions/${currentSessionId}/chat`)), { role: 'doctor', text, timestamp: Date.now() });
+        input.value = '';
+    } catch (e) { showToast('Failed to send message', 'error'); }
 }
+document.getElementById('send-btn')?.addEventListener('click', sendMessage);
+document.getElementById('chat-input')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
 
-sendBtn?.addEventListener('click', sendMessage);
-chatInput?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-});
+// End session
+document.getElementById('end-session-btn')?.addEventListener('click', () => document.getElementById('prescription-modal')?.classList.remove('hidden'));
+document.getElementById('cancel-prescription-btn')?.addEventListener('click', () => document.getElementById('prescription-modal')?.classList.add('hidden'));
+document.getElementById('prescription-modal')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden'); });
 
-// End Session - Show Prescription Modal
-endSessionBtn?.addEventListener('click', () => {
-    if (prescriptionModal) prescriptionModal.classList.remove('hidden');
-});
-
-// Close modal on outside click
-prescriptionModal?.addEventListener('click', (e) => {
-    if (e.target === prescriptionModal) {
-        prescriptionModal.classList.add('hidden');
-    }
-});
-
-// Confirm End Session - Save Prescription and Close
-confirmEndBtn?.addEventListener('click', async () => {
-    const prescriptionText = document.getElementById('prescription-text')?.value?.trim();
-
-    if (!prescriptionText) {
-        alert('Please enter a prescription before ending the session.');
-        return;
-    }
-
-    if (!currentSessionId) {
-        alert('No active session found.');
-        return;
-    }
-
-    if (!currentDoctor?.uid) {
-        alert('Doctor information not found. Please refresh and try again.');
-        return;
-    }
-
-    const btn = confirmEndBtn;
-    const originalText = btn.innerText;
-
-    console.log('=== Starting End Session ===');
-    console.log('Session:', currentSessionId);
-    console.log('Doctor:', currentDoctor.uid);
-
+document.getElementById('confirm-end-btn')?.addEventListener('click', async () => {
+    const prescription = document.getElementById('prescription-text')?.value?.trim();
+    if (!prescription) { showToast('Please write a prescription first.', 'warning'); return; }
+    if (!currentSessionId || !currentDoctor?.uid) { showToast('Session error. Refresh and try again.', 'error'); return; }
+    const btn = document.getElementById('confirm-end-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
     try {
-        btn.disabled = true;
-        btn.innerText = 'Saving...';
-
-        console.log('Step 1: Saving prescription to session...');
-        await update(ref(db, `sessions/${currentSessionId}`), {
-            prescription: prescriptionText,
-            endTime: Date.now(),
-            status: 'COMPLETED'
-        });
-        console.log('✓ Prescription saved');
-
-        console.log('Step 2: Freeing doctor...');
-        await update(ref(db, `users/doctors/${currentDoctor.uid}`), {
-            busy: false,
-            activeSessionId: null
-        });
-        console.log('✓ Doctor freed');
-
-        console.log('Step 3: Cleaning UI...');
-        const textArea = document.getElementById('prescription-text');
-        if (textArea) textArea.value = '';
-
-        if (prescriptionModal) prescriptionModal.classList.add('hidden');
-
-        // Reset button BEFORE alert
-        btn.disabled = false;
-        btn.innerText = originalText;
-        console.log('✓ UI cleaned');
-
-        console.log('=== Session End Complete ===');
+        await update(ref(db, `sessions/${currentSessionId}`), { prescription, endTime: Date.now(), status: 'COMPLETED' });
+        await update(ref(db, `users/doctors/${currentDoctor.uid}`), { busy: false, activeSessionId: null });
+        document.getElementById('prescription-text').value = '';
+        document.getElementById('prescription-modal')?.classList.add('hidden');
         stopVideoCall();
-        alert('Consultation completed successfully! Prescription sent to patient.');
-
-        currentSessionId = null;
-        currentPatientId = null;
-
-    } catch (error) {
-        console.error('!!! Session End Error !!!');
-        console.error('Error:', error);
-        console.error('Message:', error.message);
-        console.error('Code:', error.code);
-
-        btn.disabled = false;
-        btn.innerText = originalText;
-
-        alert(`Error: ${error.message}\n\nPlease try again or refresh the page.`);
-    }
+        showToast('✅ Consultation completed! Prescription sent to patient.', 'success');
+        currentSessionId = null; currentPatientId = null;
+        hideConsultation();
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Complete & Send Prescription'; }
 });
 
-// Add cancel button handler
-const cancelPrescriptionBtn = document.getElementById('cancel-prescription-btn');
-cancelPrescriptionBtn?.addEventListener('click', () => {
-    if (prescriptionModal) prescriptionModal.classList.add('hidden');
-});
+// Load History
+function loadHistory(uid) {
+    const q = query(ref(db, 'sessions'), orderByChild('doctorId'), equalTo(uid));
+    onValue(q, snap => {
+        const all = snap.val() || {};
+        const sessions = Object.entries(all).sort((a, b) => (b[1].startTime || 0) - (a[1].startTime || 0));
+        const today = new Date().setHours(0,0,0,0);
 
-// Load Doctor's Consultation History
-async function loadConsultationHistory(doctorId) {
-    console.log('Loading consultation history for:', doctorId);
+        document.getElementById('stat-patients').textContent = sessions.length;
+        document.getElementById('stat-today').textContent = sessions.filter(([,s]) => (s.startTime||0) >= today).length;
+        document.getElementById('stat-emergencies').textContent = sessions.filter(([,s]) => s.emergency).length;
 
-    const sessionsQuery = query(
-        ref(db, 'sessions'),
-        orderByChild('doctorId'),
-        equalTo(doctorId)
-    );
-
-    // Use onValue for real-time history updates
-    onValue(sessionsQuery, (snapshot) => {
-        const allSessions = snapshot.val() || {};
-        const doctorSessions = Object.entries(allSessions)
-            .sort((a, b) => (b[1].startTime || 0) - (a[1].startTime || 0))
-            .slice(0, 10);
-
-        // Update stats
-        const totalPatients = doctorSessions.length;
-        const todayStart = new Date().setHours(0, 0, 0, 0);
-        const todaySessions = doctorSessions.filter(([sid, s]) => (s.startTime || 0) >= todayStart).length;
-        const emergencies = doctorSessions.filter(([sid, s]) => s.emergency).length;
-
-        const statPatientsEl = document.getElementById('stat-patients');
-        const statTodayEl = document.getElementById('stat-today');
-        const statEmergenciesEl = document.getElementById('stat-emergencies');
-
-        if (statPatientsEl) statPatientsEl.innerText = totalPatients;
-        if (statTodayEl) statTodayEl.innerText = todaySessions;
-        if (statEmergenciesEl) statEmergenciesEl.innerText = emergencies;
-
-        // Render history table
-        const historyList = document.getElementById('history-list');
-        if (!historyList) return;
-
-        historyList.innerHTML = '';
-
-        if (doctorSessions.length === 0) {
-            historyList.innerHTML = `
-                <tr>
-                    <td colspan="4" style="text-align:center;color:#64748b;padding:2rem;">
-                        No consultations yet. Your patient history will appear here.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        doctorSessions.forEach(([sid, session]) => {
-            const tr = document.createElement('tr');
-            const date = new Date(session.startTime).toLocaleDateString('en-IN', {
-                day: '2-digit', month: 'short', year: '2-digit'
-            });
-            const duration = formatDuration(session.startTime, session.endTime);
-            const isEmergency = session.emergency;
-            const isCompleted = session.status === 'COMPLETED' || !!session.endTime;
-
-            tr.innerHTML = `
-                <td>
-                    ${session.patientName || 'Patient'}
-                    ${isEmergency ? '<span class="icon-svg" style="color:#ef4444;width:0.9em;height:0.9em;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></span>' : ''}
-                </td>
-                <td style="font-size:0.85rem;">${date}</td>
-                <td>${duration}</td>
-                <td>
-                    <span class="status-indicator ${isCompleted ? 'status-offline' : 'status-active'}">
-                        ${isCompleted ? 'Done' : 'Active'}
-                    </span>
-                </td>
-            `;
-            historyList.appendChild(tr);
-        });
+        renderHistoryTable('history-list', sessions.slice(0, 10));
+        renderHistoryTable('full-history-list', sessions);
     });
 }
 
-// Format duration helper
-function formatDuration(startTime, endTime) {
-    if (!startTime) return '-';
-    const end = endTime || Date.now();
-    const min = Math.floor((end - startTime) / 60000);
-    if (min < 1) return '< 1 min';
-    if (min < 60) return `${min} min`;
-    const hrs = Math.floor(min / 60);
-    const rem = min % 60;
-    return `${hrs}h ${rem}m`;
+function renderHistoryTable(id, sessions) {
+    const el = document.getElementById(id); if (!el) return;
+    if (!sessions.length) { el.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem">No consultations yet.</td></tr>`; return; }
+    el.innerHTML = sessions.map(([sid, s]) => `
+        <tr>
+            <td><strong>${s.patientName || 'Patient'}</strong>${s.emergency ? ' <span style="color:#ef4444">⚠</span>' : ''}</td>
+            <td>${s.symptoms?.substring(0,40) || '--'}${(s.symptoms?.length||0)>40?'…':''}</td>
+            <td style="font-size:0.82rem">${s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '-'}</td>
+            <td>${formatDur(s.startTime, s.endTime)}</td>
+            <td><span class="status-indicator ${s.endTime ? 'status-offline' : 'status-active'}">${s.endTime ? '✓ Done' : '⏺ Active'}</span></td>
+        </tr>
+    `).join('');
 }
 
-// Initialize after auth success
-window.addEventListener('auth-success', async (e) => {
-    currentDoctor = e.detail;
-    console.log('Doctor authenticated:', currentDoctor.email);
-
-    // Get doctor data
-    const docSnap = await get(ref(db, `users/doctors/${currentDoctor.uid}`));
-    currentDoctorData = docSnap.val();
-
-    // Update UI
-    const nameEl = document.getElementById('doctor-name');
-    const idEl = document.getElementById('doctor-id');
-
-    if (nameEl) nameEl.innerText = `Dr. ${currentDoctorData?.name || currentDoctor.displayName || 'Practitioner'}`;
-    if (idEl) idEl.innerText = `ID: ${currentDoctor.uid.substring(0, 8)}`;
-
-    // Load consultation history
-    await loadConsultationHistory(currentDoctor.uid);
-
-    // Start heartbeat and session monitoring
-    startHeartbeat(currentDoctor.uid);
-    monitorSessions(currentDoctor.uid);
-
-    // Load profile info
-    loadDoctorProfile();
-});
-
-// Load Doctor Profile
-function loadDoctorProfile() {
-    if (!currentDoctor || !currentDoctorData) return;
-
-    const nameSpan = document.getElementById('doc-profile-name');
-    const emailSpan = document.getElementById('doc-profile-email');
-    const statusSpan = document.getElementById('doc-profile-status');
-
-    if (nameSpan) nameSpan.innerText = currentDoctorData.name || currentDoctor.displayName || 'Doctor';
-    if (emailSpan) emailSpan.innerText = currentDoctor.email;
-    if (statusSpan) statusSpan.innerText = currentDoctorData.approved ? 'Approved' : 'Pending Approval';
+// Load All Patients
+function loadAllPatients() {
+    onValue(ref(db, 'users/patients'), snap => {
+        const patients = snap.val() || {};
+        const el = document.getElementById('all-patients-list'); if (!el) return;
+        const entries = Object.entries(patients);
+        if (!entries.length) { el.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:2rem">No patients found.</p>'; return; }
+        el.innerHTML = `<table><thead><tr><th>Name</th><th>Age</th><th>Blood</th><th>Email</th></tr></thead><tbody>${
+            entries.map(([uid, p]) => `<tr><td><strong>${p.name||'N/A'}</strong></td><td>${p.age||'-'}</td><td>${p.bloodGroup||'-'}</td><td style="font-size:0.82rem">${p.email||'-'}</td></tr>`).join('')
+        }</tbody></table>`;
+    });
 }
 
-// Load Patient Reports for Doctor
-async function loadPatientReportsForDoctor(patientId) {
-    const reportsList = document.getElementById('patient-reports-list');
-    if (!reportsList) return;
-
-    try {
-        const reportsSnap = await get(ref(db, `users/patients/${patientId}/reports`));
-        const reports = reportsSnap.val() || {};
-        const reportsArray = Object.entries(reports);
-
-        if (reportsArray.length === 0) {
-            reportsList.innerHTML = '<p class="text-muted" style="font-size:0.9rem;">No reports uploaded</p>';
-            return;
-        }
-
-        reportsList.innerHTML = reportsArray.map(([id, report]) => `
-            <div class="report-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:0.5rem; background:#f8fafc;">
-                <div style="flex:1;">
-                    <strong style="font-size:0.9rem;">${report.description || 'Report'}</strong>
-                    <p style="font-size:0.75rem; color:#64748b; margin:0.25rem 0 0 0;">
-                        ${new Date(report.uploadedAt).toLocaleDateString()}
-                    </p>
-                </div>
-                <button class="btn btn-sm btn-primary" onclick="window.open('${report.downloadURL}', '_blank')" style="padding:0.4rem 0.8rem; font-size:0.85rem;">
-                    View
-                </button>
+// Load patient reports
+async function loadPatientReports(patientId) {
+    const el = document.getElementById('patient-reports-list'); if (!el) return;
+    onValue(ref(db, `users/patients/${patientId}/reports`), snap => {
+        const reports = Object.entries(snap.val() || {});
+        if (!reports.length) { el.innerHTML = '<p style="color:#94a3b8;font-size:0.875rem">No reports uploaded.</p>'; return; }
+        el.innerHTML = reports.map(([id, r]) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;border:1px solid #f1f5f9;border-radius:10px;margin-bottom:0.5rem">
+                <div><strong style="font-size:0.875rem">${r.description||'Report'}</strong><p style="font-size:0.75rem;color:#94a3b8;margin:0.2rem 0 0">${new Date(r.uploadedAt).toLocaleDateString()}</p></div>
+                <button class="btn btn-sm btn-primary" onclick="window.open('${r.downloadURL}','_blank')">View</button>
             </div>
         `).join('');
-
-        // Also listen for new reports
-        onValue(ref(db, `users/patients/${patientId}/reports`), (snap) => {
-            const updatedReports = snap.val() || {};
-            const updatedArray = Object.entries(updatedReports);
-
-            if (updatedArray.length > reportsArray.length) {
-                // New report detected!
-                console.log('New report detected for patient:', patientId);
-                const newReport = updatedArray[updatedArray.length - 1][1];
-                alert(`🔔 New Medical Report Uploaded: ${newReport.description || 'Report'}`);
-            }
-
-            if (updatedArray.length === 0) {
-                reportsList.innerHTML = '<p class="text-muted" style="font-size:0.9rem;">No reports uploaded</p>';
-                return;
-            }
-
-            reportsList.innerHTML = updatedArray.map(([id, report]) => `
-                <div class="report-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:0.5rem; background:#f8fafc; border-left: 4px solid var(--primary);">
-                    <div style="flex:1;">
-                        <strong style="font-size:0.9rem;">${report.description || 'Report'}</strong>
-                        <p style="font-size:0.75rem; color:#64748b; margin:0.25rem 0 0 0;">
-                            ${new Date(report.uploadedAt).toLocaleDateString()}
-                        </p>
-                    </div>
-                    <button class="btn btn-sm btn-primary" onclick="window.open('${report.downloadURL}', '_blank')" style="padding:0.4rem 0.8rem; font-size:0.85rem;">
-                        View
-                    </button>
-                </div>
-            `).join('');
-        });
-
-    } catch (error) {
-        console.error('Error loading reports:', error);
-        reportsList.innerHTML = '<p class="text-muted" style="font-size:0.9rem; color:#ef4444;">Failed to load reports</p>';
-    }
+    });
 }
 
-// Start Auth Check
-checkAuth('doctor');
+// Doctor Profile
+function loadProfile() {
+    if (!currentDoctor || !currentDoctorData) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '--'; };
+    set('doc-profile-name', currentDoctorData.name);
+    set('doc-profile-email', currentDoctor.email);
+    set('doc-profile-spec', currentDoctorData.specialty);
+    set('doc-profile-exp', currentDoctorData.experience);
+    set('doc-profile-phone', currentDoctorData.phone);
+    set('doc-profile-status', currentDoctorData.approved ? '✓ Approved' : '⏳ Pending Approval');
+}
 
+function formatDur(start, end) {
+    if (!start) return '-';
+    const min = Math.floor(((end || Date.now()) - start) / 60000);
+    if (min < 1) return '< 1m'; if (min < 60) return `${min}m`;
+    return `${Math.floor(min/60)}h ${min%60}m`;
+}
+
+function showToast(msg, type='success') {
+    let t = document.getElementById('toast-msg');
+    if (!t) { t = document.createElement('div'); t.id = 'toast-msg'; t.style.cssText = 'position:fixed;bottom:2rem;right:2rem;padding:0.875rem 1.5rem;border-radius:12px;font-weight:600;font-size:0.875rem;z-index:9999;max-width:360px;transform:translateY(100px);opacity:0;transition:all 0.3s;box-shadow:0 8px 24px rgba(0,0,0,0.15)'; document.body.appendChild(t); }
+    t.textContent = msg;
+    t.style.background = type==='error'?'#fee2e2':type==='warning'?'#fef3c7':'#d1fae5';
+    t.style.color = type==='error'?'#991b1b':type==='warning'?'#92400e':'#065f46';
+    setTimeout(() => { t.style.transform='translateY(0)'; t.style.opacity='1'; }, 10);
+    setTimeout(() => { t.style.transform='translateY(100px)'; t.style.opacity='0'; }, 4000);
+}
+
+function showNotification(msg) {
+    if (Notification.permission === 'granted') new Notification('Aarogya', { body: msg, icon: '/favicon.ico' });
+    else showToast(msg, 'success');
+}
+
+window.addEventListener('auth-success', async e => {
+    currentDoctor = e.detail;
+    Notification.requestPermission().catch(() => {});
+    const snap = await get(ref(db, `users/doctors/${currentDoctor.uid}`));
+    currentDoctorData = snap.val();
+    const nameEl = document.getElementById('doctor-name');
+    if (nameEl) nameEl.textContent = `Dr. ${currentDoctorData?.name || 'Practitioner'}`;
+    const idEl = document.getElementById('doctor-id');
+    if (idEl) idEl.textContent = `ID: ${currentDoctor.uid.substring(0,8)}`;
+    loadHistory(currentDoctor.uid);
+    startHeartbeat(currentDoctor.uid);
+    monitorSessions(currentDoctor.uid);
+    loadProfile();
+    loadAllPatients();
+});
+
+checkAuth('doctor');

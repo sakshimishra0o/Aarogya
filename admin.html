@@ -1,137 +1,311 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aarogya - Admin Panel</title>
+    <title>Aarogya - Admin Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --sidebar-w: 260px; }
+        .app-layout { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: var(--sidebar-w); background: #0f172a; color: #fff;
+            display: flex; flex-direction: column; position: fixed; top: 0; left: 0;
+            height: 100vh; z-index: 200; transition: transform 0.3s ease;
+        }
+        .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 0.75rem; }
+        .logo-box { width: 38px; height: 38px; background: linear-gradient(135deg,#4f46e5,#7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; }
+        .brand-text { font-weight: 700; font-size: 1.1rem; }
+        .brand-sub { font-size: 0.7rem; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
+        .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
+        .nav-item {
+            display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+            border-radius: 10px; border: none; background: transparent; color: #94a3b8;
+            font-size: 0.9rem; font-weight: 500; cursor: pointer; width: 100%; text-align: left;
+            transition: all 0.2s;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-item.active { background: rgba(79,70,229,0.2); color: #818cf8; }
+        .nav-item.logout { color: #f87171; margin-top: auto; }
+        .nav-item.logout:hover { background: rgba(239,68,68,0.1); }
+        .nav-sep { border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 0.5rem 0; }
+        .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; flex-shrink: 0; }
+        .sidebar-footer { padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); }
+        .admin-info { font-size: 0.78rem; color: #64748b; }
+        #admin-name { color: #94a3b8; font-weight: 600; display: block; }
 
+        .main-content { margin-left: var(--sidebar-w); flex: 1; background: #f8fafc; min-height: 100vh; }
+        .top-bar {
+            background: #fff; padding: 1rem 2rem; display: flex; align-items: center;
+            justify-content: space-between; border-bottom: 1px solid #e2e8f0;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .top-bar-left { display: flex; align-items: center; gap: 1rem; }
+        .page-title { font-size: 1.25rem; font-weight: 700; }
+        .admin-avatar { width: 36px; height: 36px; background: linear-gradient(135deg,#4f46e5,#7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.9rem; }
+        .btn-icon-top { background: none; border: none; cursor: pointer; padding: 0.5rem; border-radius: 8px; display: none; }
+        .btn-icon-top:hover { background: #f1f5f9; }
+
+        .content-area { padding: 2rem; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat-box {
+            background: #fff; border-radius: 14px; padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f1f5f9;
+            display: flex; align-items: center; gap: 1rem;
+        }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+        .stat-icon.blue { background: #eff6ff; }
+        .stat-icon.green { background: #f0fdf4; }
+        .stat-icon.red { background: #fff1f2; }
+        .stat-icon.yellow { background: #fffbeb; }
+        .stat-icon.purple { background: #f5f3ff; }
+        .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem; }
+        .stat-val { font-size: 2rem; font-weight: 800; color: #0f172a; }
+
+        .section-card { background: #fff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; margin-bottom: 2rem; }
+        .section-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+        .section-card-header h3 { font-size: 1.05rem; font-weight: 700; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8fafc; padding: 0.75rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 600; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+        td { padding: 0.875rem 1rem; border-bottom: 1px solid #f8fafc; font-size: 0.875rem; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .empty-td { text-align: center; color: #94a3b8; padding: 2rem !important; }
+        .actions-td { white-space: nowrap; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+        .btn { padding: 0.6rem 1.1rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; min-height: 40px; }
+        .btn-primary { background: #4f46e5; color: #fff; }
+        .btn-primary:hover { background: #3730a3; }
+        .btn-accent { background: #10b981; color: #fff; }
+        .btn-accent:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; color: #fff; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline { background: transparent; border: 2px solid #e2e8f0; color: #475569; }
+        .btn-outline:hover { border-color: #4f46e5; color: #4f46e5; }
+        .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; min-height: 32px; }
+        .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        .status-indicator { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; display: inline-block; white-space: nowrap; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-busy { background: #fef3c7; color: #92400e; }
+        .status-inactive { background: #fee2e2; color: #991b1b; }
+        .status-offline { background: #f1f5f9; color: #64748b; }
+        .badge-emergency { background: #fee2e2; color: #dc2626; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; backdrop-filter: blur(4px); }
+        .modal-box { background: #fff; border-radius: 20px; padding: 2rem; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.2); }
+        .modal-box h2 { font-size: 1.3rem; margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+        .modal-actions .btn { flex: 1; }
+        .hidden { display: none !important; }
+
+        .input-group { margin-bottom: 1rem; }
+        .input-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+        .input-group input, .input-group select { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; transition: border-color 0.2s; background: #fff; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        .admin-section-view { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 0.875rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.9rem; z-index: 9999; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; max-width: 360px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+        .toast-show { transform: translateY(0); opacity: 1; }
+        .toast-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .toast-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        /* Auth */
+        .auth-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%); padding: 2rem 1rem; }
+        .auth-logo { width: 72px; height: 72px; background: linear-gradient(135deg,#4f46e5,#7c3aed); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 1rem; box-shadow: 0 0 40px rgba(79,70,229,0.4); }
+        .auth-brand-name { font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 0.25rem; }
+        .auth-brand-sub { color: #64748b; font-size: 0.9rem; margin-bottom: 2rem; }
+        .auth-card { background: #fff; border-radius: 20px; padding: 2rem; width: 100%; max-width: 420px; box-shadow: 0 25px 60px rgba(0,0,0,0.4); }
+        .auth-card h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .auth-card p { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+        .auth-link { color: #4f46e5; font-weight: 600; text-decoration: none; font-size: 0.875rem; }
+        .auth-link:hover { text-decoration: underline; }
+        .security-badge { display: flex; align-items: center; gap: 0.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.6rem 0.875rem; margin-top: 1rem; font-size: 0.8rem; color: #166534; }
+
+        @media (min-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(4,1fr); }
+            .btn-icon-top { display: none; }
+        }
+        @media (max-width: 767px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.4); }
+            .main-content { margin-left: 0; }
+            .btn-icon-top { display: flex; }
+            .content-area { padding: 1rem; }
+            .top-bar { padding: 1rem; }
+            .section-card { padding: 1rem; }
+        }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; display: none; }
+        .overlay.show { display: block; }
+    </style>
+</head>
 <body>
-    <div id="auth-container" class="panel-container auth-page">
-        <div class="auth-brand">
-            <div class="logo">A</div>
-            <span class="brand-name">Aarogya</span>
-        </div>
-        <div class="card auth-card">
+    <!-- Auth Page -->
+    <div id="auth-container" class="auth-page">
+        <div class="auth-logo">🛡</div>
+        <div class="auth-brand-name">Aarogya Admin</div>
+        <div class="auth-brand-sub">Restricted access — Authorized personnel only</div>
+        <div class="auth-card">
             <h1>Admin Gateway</h1>
-            <p>Access restricted to hospital administrators</p>
+            <p>Sign in to access the hospital management dashboard</p>
             <form id="login-form">
                 <div class="input-group">
                     <label>Admin Email</label>
-                    <input type="email" id="email" required placeholder="admin@hospital.com">
+                    <input type="email" id="email" required placeholder="AarogyaCloud@gmail.com" autocomplete="username">
                 </div>
                 <div class="input-group">
-                    <label>Master Key</label>
-                    <input type="password" id="password" required placeholder="••••••••">
+                    <label>Master Password</label>
+                    <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn btn-dark" style="width:100%">Login to Dashboard</button>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem">Login to Dashboard</button>
             </form>
-            <div style="margin-top: 1.5rem; font-size: 0.85rem;">
-                <p style="color: #64748b;">Trouble logging in?</p>
-                <a href="setup-admin.html" style="color: var(--primary); font-weight: 600; text-decoration: none;">Run Admin Rescue & Setup →</a>
+            <div class="security-badge">🔒 256-bit encrypted secure connection</div>
+            <div style="margin-top:1.25rem;text-align:center;font-size:0.85rem;color:#64748b">
+                Trouble logging in? <a href="setup-admin.html" class="auth-link">Admin Setup & Rescue →</a>
             </div>
         </div>
     </div>
 
-    <div id="main-panel" class="panel-container hidden">
-        <header class="panel-header admin-header">
-            <div class="admin-brand">
-                <h1>Aarogya Admin</h1>
-                <span class="badge badge-dark">ADMIN</span>
-            </div>
-            <button id="logout-btn" class="btn btn-outline">Exit</button>
-        </header>
-
-        <main class="content">
-            <div class="admin-stats">
-                <div class="stat-card card">
-                    <label>Total Sessions</label>
-                    <h2 id="stat-total">0</h2>
-                </div>
-                <div class="stat-card card">
-                    <label>Active Now</label>
-                    <h2 id="stat-active" class="color-primary">0</h2>
-                </div>
-                <div class="stat-card card">
-                    <label>Emergencies</label>
-                    <h2 id="stat-emergency" class="color-danger">0</h2>
-                </div>
-                <div class="stat-card card">
-                    <label>Doctors Online</label>
-                    <h2 id="stat-online" class="color-success">0</h2>
+    <!-- Main App -->
+    <div id="main-panel" class="app-layout hidden">
+        <div class="overlay" id="overlay"></div>
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-box">A</div>
+                <div>
+                    <div class="brand-text">Aarogya</div>
+                    <div class="brand-sub">Admin Panel</div>
                 </div>
             </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="dashboard"><span class="nav-icon">📊</span> Dashboard</button>
+                <button class="nav-item" data-section="doctors"><span class="nav-icon">👨‍⚕️</span> Doctor Management</button>
+                <button class="nav-item" data-section="patients"><span class="nav-icon">🧑‍🤝‍🧑</span> Patient Management</button>
+                <button class="nav-item" data-section="sessions"><span class="nav-icon">🎥</span> Live Sessions</button>
+                <button class="nav-item" data-section="reports"><span class="nav-icon">📋</span> System Reports</button>
+                <hr class="nav-sep">
+                <button class="nav-item logout" id="logout-btn"><span class="nav-icon">🚪</span> Logout</button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="admin-info">Logged in as<span id="admin-name">Admin</span></div>
+            </div>
+        </aside>
 
-            <section class="admin-section">
-                <div class="section-header">
-                    <h3>Doctor Management</h3>
-                    <button id="add-doctor-btn" class="btn btn-primary btn-sm">+ Add Doctor</button>
+        <!-- Main -->
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="btn-icon-top" id="menu-toggle">☰</button>
+                    <span class="page-title" id="page-title">Dashboard</span>
+                </div>
+                <div class="admin-avatar">A</div>
+            </div>
+
+            <div class="content-area">
+                <!-- Dashboard -->
+                <div id="section-dashboard" class="admin-section-view">
+                    <div class="stats-grid">
+                        <div class="stat-box"><div class="stat-icon blue">🎥</div><div><div class="stat-label">Total Sessions</div><div class="stat-val" id="stat-total">0</div></div></div>
+                        <div class="stat-box"><div class="stat-icon green">🟢</div><div><div class="stat-label">Active Now</div><div class="stat-val" id="stat-active">0</div></div></div>
+                        <div class="stat-box"><div class="stat-icon red">⚠️</div><div><div class="stat-label">Emergencies</div><div class="stat-val" id="stat-emergency">0</div></div></div>
+                        <div class="stat-box"><div class="stat-icon purple">👨‍⚕️</div><div><div class="stat-label">Doctors Online</div><div class="stat-val" id="stat-online">0</div></div></div>
+                    </div>
+                    <div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+                        <div class="stat-box"><div class="stat-icon yellow">👨‍⚕️</div><div><div class="stat-label">Total Doctors</div><div class="stat-val" id="stat-doctors">0</div></div></div>
+                        <div class="stat-box"><div class="stat-icon blue">🧑</div><div><div class="stat-label">Total Patients</div><div class="stat-val" id="stat-patients">0</div></div></div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-card-header"><h3>Recent Sessions</h3></div>
+                        <div class="table-wrap"><table><thead><tr><th>Session ID</th><th>Patient</th><th>Doctor</th><th>Date</th><th>Duration</th><th>Status</th></tr></thead><tbody id="session-list"><tr><td colspan="6" class="empty-td">Loading...</td></tr></tbody></table></div>
+                    </div>
                 </div>
 
-                <div class="card table-card">
-                    <table id="doctor-table">
-                        <thead>
-                            <tr>
-                                <th>Doctor</th>
-                                <th>Email</th>
-                                <th>Status</th>
-                                <th>Approval</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="doctor-list">
-                            <!-- JS populated -->
-                        </tbody>
-                    </table>
+                <!-- Doctors -->
+                <div id="section-doctors" class="admin-section-view hidden">
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <h3>Doctor Management</h3>
+                            <button id="add-doctor-btn" class="btn btn-primary">+ Add Doctor</button>
+                        </div>
+                        <div class="table-wrap"><table><thead><tr><th>Doctor</th><th>Email</th><th>Phone</th><th>Status</th><th>Approval</th><th>Actions</th></tr></thead><tbody id="doctor-list"><tr><td colspan="6" class="empty-td">Loading...</td></tr></tbody></table></div>
+                    </div>
                 </div>
-            </section>
 
-            <section class="admin-section">
-                <h3>Live Session Monitoring</h3>
-                <div class="card table-card">
-                    <table id="session-table">
-                        <thead>
-                            <tr>
-                                <th>Session ID</th>
-                                <th>Patient</th>
-                                <th>Doctor</th>
-                                <th>Duration</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="session-list">
-                            <!-- JS populated -->
-                        </tbody>
-                    </table>
+                <!-- Patients -->
+                <div id="section-patients" class="admin-section-view hidden">
+                    <div class="section-card">
+                        <div class="section-card-header"><h3>Patient Management</h3></div>
+                        <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Age</th><th>Blood</th><th>Status</th></tr></thead><tbody id="patient-list"><tr><td colspan="5" class="empty-td">Loading...</td></tr></tbody></table></div>
+                    </div>
                 </div>
-            </section>
-        </main>
+
+                <!-- Sessions -->
+                <div id="section-sessions" class="admin-section-view hidden">
+                    <div class="section-card">
+                        <div class="section-card-header"><h3>All Consultation Sessions</h3></div>
+                        <div class="table-wrap"><table><thead><tr><th>Session ID</th><th>Patient</th><th>Doctor</th><th>Date</th><th>Duration</th><th>Status</th></tr></thead><tbody id="session-list-full"><tr><td colspan="6" class="empty-td">Loading...</td></tr></tbody></table></div>
+                    </div>
+                </div>
+
+                <!-- Reports -->
+                <div id="section-reports" class="admin-section-view hidden">
+                    <div class="section-card">
+                        <div class="section-card-header"><h3>System Overview</h3></div>
+                        <p style="color:#64748b">Real-time stats are shown on the Dashboard. All session data is stored in Firebase Realtime Database.</p>
+                        <div style="margin-top:1rem;padding:1rem;background:#f8fafc;border-radius:10px;font-size:0.875rem;color:#374151">
+                            <strong>Database Path Structure:</strong><br>
+                            • <code>users/doctors/</code> — Doctor records<br>
+                            • <code>users/patients/</code> — Patient records<br>
+                            • <code>sessions/</code> — All consultation sessions<br>
+                            • <code>doctorStatus/</code> — Online status heartbeat
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Add Doctor Modal -->
     <div id="doctor-modal" class="modal hidden">
-        <div class="modal-content">
-            <h2>Register New Doctor</h2>
+        <div class="modal-box">
+            <h2>👨‍⚕️ Register New Doctor</h2>
             <form id="add-doctor-form">
-                <div class="input-group">
-                    <label>Full Name</label>
-                    <input type="text" id="doc-name" required placeholder="Dr. John Smith">
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="doc-name" required placeholder="Dr. John Smith">
+                    </div>
+                    <div class="input-group">
+                        <label>Specialty *</label>
+                        <input type="text" id="doc-specialty" required placeholder="Cardiologist">
+                    </div>
                 </div>
                 <div class="input-group">
-                    <label>Specialty</label>
-                    <input type="text" id="doc-specialty" placeholder="General Physician">
-                </div>
-                <div class="input-group">
-                    <label>Email</label>
+                    <label>Email *</label>
                     <input type="email" id="doc-email" required placeholder="doctor@hospital.com">
                 </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Password *</label>
+                        <input type="password" id="doc-password" required placeholder="Min 6 chars" minlength="6">
+                    </div>
+                    <div class="input-group">
+                        <label>Phone</label>
+                        <input type="tel" id="doc-phone" placeholder="+91 98765 43210">
+                    </div>
+                </div>
                 <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" id="doc-password" required placeholder="Min 6 characters" minlength="6">
+                    <label>Experience</label>
+                    <input type="text" id="doc-experience" placeholder="5 years">
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="close-modal" class="btn btn-outline">Cancel</button>
@@ -142,6 +316,25 @@
     </div>
 
     <script type="module" src="./scripts/admin.js"></script>
+    <script>
+        // Page title update on nav
+        document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const titles = { dashboard: 'Dashboard', doctors: 'Doctor Management', patients: 'Patient Management', sessions: 'Live Sessions', reports: 'System Reports' };
+                document.getElementById('page-title').textContent = titles[btn.dataset.section] || 'Dashboard';
+            });
+        });
+        // Overlay for mobile
+        document.getElementById('overlay')?.addEventListener('click', () => {
+            document.getElementById('sidebar')?.classList.remove('open');
+            document.getElementById('overlay')?.classList.remove('show');
+        });
+        document.getElementById('menu-toggle')?.addEventListener('click', () => {
+            document.getElementById('overlay')?.classList.add('show');
+        });
+        document.getElementById('close-sidebar')?.addEventListener('click', () => {
+            document.getElementById('overlay')?.classList.remove('show');
+        });
+    </script>
 </body>
-
 </html>
