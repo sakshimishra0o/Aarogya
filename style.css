@@ -335,6 +335,20 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     to { transform: translateY(0); }
 }
 
+/* ===== TABLE RESPONSIVENESS ===== */
+div[style*="overflow"] {
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+table {
+    min-width: max-content !important;
+    width: 100%;
+}
+th, td {
+    white-space: nowrap !important;
+    padding: 1rem;
+}
+
 /* Responsive Bottom Nav */
 @media (max-width: 768px) {
     /* Transform Sidebar into Bottom Nav */
@@ -403,10 +417,6 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     .auth-card { padding: 1.5rem; }
     #menu-toggle { display: none !important; }
     
-    /* Fix table squishing on mobile */
-    div[style*="overflow-x:auto"] table {
-        min-width: 800px; /* Forces horizontal scrolling */
-    }
     .top-header {
         padding: 0.75rem 1rem;
     }
