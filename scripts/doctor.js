@@ -5,7 +5,7 @@ import { ref, set, push, onValue, update, get, onDisconnect, off, query, orderBy
 
 let currentDoctor = null, currentDoctorData = null;
 let currentSessionId = null, currentPatientId = null;
-let heartbeatInterval = null, sessionListener = null, chatListener = null, healthListener = null;
+let heartbeatInterval = null, sessionListener = null, chatListener = null, healthListener = null, sessionHeartbeat = null;
 let pc = null, localStream = null;
 const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }], iceCandidatePoolSize: 10 };
 
@@ -85,24 +85,35 @@ function startHeartbeat(uid) {
 
 // Monitor sessions
 function monitorSessions(uid) {
-    onValue(ref(db, `users/doctors/${uid}`), async snap => {
-        const data = snap.val(); currentDoctorData = data;
-        if (data?.activeSessionId && data.activeSessionId !== currentSessionId) {
-            const sSnap = await get(ref(db, `sessions/${data.activeSessionId}`));
-            const session = sSnap.val();
-            if (session && session.status === 'active') {
-                currentSessionId = data.activeSessionId;
-                showNotification(`New Patient: ${session.patientName || 'Patient'}\nSymptoms: ${session.symptoms || 'N/A'}`);
-                showConsultation(currentSessionId);
-            } else {
-                await update(ref(db, `users/doctors/${uid}`), { activeSessionId: null, busy: false }).catch(() => {});
-                if (currentSessionId) { currentSessionId = null; hideConsultation(); }
+    const q = query(ref(db, 'sessions'), orderByChild('doctorId'), equalTo(uid));
+    onValue(q, snap => {
+        const all = snap.val() || {};
+        let activeSessionId = null;
+        let activeSession = null;
+        for (const [sid, session] of Object.entries(all)) {
+            if (session.status === 'active') {
+                activeSessionId = sid;
+                activeSession = session;
+                break;
             }
-        } else if (!data?.activeSessionId && currentSessionId) {
+        }
+        
+        if (activeSessionId && activeSessionId !== currentSessionId) {
+            currentSessionId = activeSessionId;
+            showNotification(`New Patient: ${activeSession.patientName || 'Patient'}\nSymptoms: ${activeSession.symptoms || 'N/A'}`);
+            openConsultation(currentSessionId);
+        } else if (!activeSessionId && currentSessionId) {
             stopVideoCall(); currentSessionId = null; hideConsultation();
         }
     });
 }
+
+window.openConsultation = function(sid) {
+    if (currentSessionId !== sid) {
+        currentSessionId = sid;
+    }
+    showConsultation(sid);
+};
 
 function showConsultation(sid) {
     switchView('dashboard');
@@ -113,6 +124,14 @@ function showConsultation(sid) {
     if (sessionListener) off(sessionListener);
     if (chatListener)    off(chatListener);
     if (healthListener)  off(healthListener);
+    if (sessionHeartbeat) clearInterval(sessionHeartbeat);
+
+    // Update lastActive repeatedly while session is active
+    sessionHeartbeat = setInterval(() => {
+        if (currentSessionId) {
+            update(ref(db, `sessions/${currentSessionId}`), { lastActive: Date.now() }).catch(()=>{});
+        }
+    }, 5000);
 
     // ── 1. Session info listener (name, symptoms, emergency) ─
     sessionListener = ref(db, `sessions/${sid}`);
@@ -217,6 +236,7 @@ function hideConsultation() {
     if (sessionListener) { off(sessionListener); sessionListener = null; }
     if (chatListener)    { off(chatListener);    chatListener = null; }
     if (healthListener)  { off(healthListener);  healthListener = null; }
+    if (sessionHeartbeat) { clearInterval(sessionHeartbeat); sessionHeartbeat = null; }
 
     document.getElementById('active-consultation')?.classList.add('hidden');
     document.getElementById('dashboard-view')?.classList.remove('hidden');
@@ -243,20 +263,21 @@ async function setupWebRTC(sid, role) {
         pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
         
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
-        await remove(sessionRef); // Clear old signaling data to force clean connection
-        
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        await update(sessionRef, { offer: { sdp: offer.sdp, type: offer.type } });
         
         let candidateQueue = [];
         onValue(sessionRef, snap => {
             const data = snap.val();
-            if (!data && pc && pc.signalingState !== 'closed' && pc.currentLocalDescription) {
+            if (!data && pc && pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
                 stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'doctor'), 1000); return;
             }
-            if (data?.answer && !pc.currentRemoteDescription) {
-                pc.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
+            if (data?.offer && !pc.currentRemoteDescription) {
+                pc.setRemoteDescription(new RTCSessionDescription(data.offer)).then(() => {
+                    return pc.createAnswer();
+                }).then(answer => {
+                    return pc.setLocalDescription(answer).then(() => {
+                        return update(sessionRef, { answer: { sdp: answer.sdp, type: answer.type } });
+                    });
+                }).then(() => {
                     candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
                     candidateQueue = [];
                 }).catch(() => {});
@@ -366,7 +387,7 @@ function renderHistoryTable(id, sessions) {
             <td>${s.symptoms?.substring(0,40) || '--'}${(s.symptoms?.length||0)>40?'…':''}</td>
             <td style="font-size:0.82rem">${s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '-'}</td>
             <td>${formatDur(s.startTime, s.endTime)}</td>
-            <td><span class="status-indicator ${s.status === 'ended' ? 'status-offline' : 'status-active'}">${s.status === 'ended' ? '✓ Done' : '⏺ Active'}</span></td>
+            <td><span class="status-indicator ${s.status === 'ended' ? 'status-offline' : 'status-active'}" ${s.status === 'active' ? `onclick="openConsultation('${sid}')" style="cursor:pointer;"` : ''}>${s.status === 'ended' ? '✓ Done' : '⏺ Active'}</span></td>
         </tr>
     `).join('');
     lucide.createIcons();

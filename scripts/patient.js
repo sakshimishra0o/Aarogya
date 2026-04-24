@@ -180,7 +180,8 @@ async function startSession(docId, docName, symptoms) {
         patientId: currentPatient.uid,
         patientName: patData.name || 'Patient',
         doctorId: docId, doctorName: docName,
-        symptoms, startTime: Date.now(), status: 'active'
+        symptoms, startTime: Date.now(), status: 'active',
+        assignedAt: Date.now(), lastActive: Date.now()
     });
     await update(ref(db, `users/doctors/${docId}`), { busy: true, activeSessionId: currentSessionId });
     showConsultation(docName);
@@ -255,19 +256,20 @@ async function setupWebRTC(sid, role) {
         pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
         
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
+        await remove(sessionRef); // Clear old signaling data to force clean connection
+        
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await update(sessionRef, { offer: { sdp: offer.sdp, type: offer.type } });
         
         let candidateQueue = [];
         onValue(sessionRef, async snap => {
             const data = snap.val();
-            if (!data && pc && pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
+            if (!data && pc && pc.signalingState !== 'closed' && pc.currentLocalDescription) {
                 stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'patient'), 1000); return;
             }
-            if (data?.offer && !pc.currentRemoteDescription) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const ans = await pc.createAnswer();
-                await pc.setLocalDescription(ans);
-                await update(sessionRef, { answer: { sdp: ans.sdp, type: ans.type } });
-                
+            if (data?.answer && !pc.currentRemoteDescription) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                 candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
                 candidateQueue = [];
             }
@@ -516,15 +518,73 @@ document.getElementById('upload-report-form')?.addEventListener('submit', async 
     finally { btn.disabled = false; btn.textContent = 'Upload Report'; }
 });
 
+async function reassignDoctor() {
+    if (!currentSessionId || !assignedDoctorId) return;
+    try {
+        const snap = await get(ref(db, 'users/doctors'));
+        const doctors = snap.val() || {};
+        const available = Object.entries(doctors).find(([uid, d]) =>
+            uid !== assignedDoctorId && d.approved && d.status === 'ACTIVE' && !d.busy && (Date.now() - (d.lastActiveTime || 0)) < 60000
+        );
+        
+        if (!available) {
+            showToast('Doctor disconnected. Waiting for reconnection or another doctor...', 'warning');
+            return;
+        }
+        
+        const [newDocId, newDocData] = available;
+        const oldDocId = assignedDoctorId;
+        assignedDoctorId = newDocId;
+        
+        // Update Session
+        await update(ref(db, `sessions/${currentSessionId}`), {
+            doctorId: newDocId,
+            doctorName: newDocData.name,
+            reassigned: true,
+            assignedAt: Date.now(),
+            lastActive: Date.now()
+        });
+        
+        // Update Doctors
+        await update(ref(db, `users/doctors/${newDocId}`), { busy: true, activeSessionId: currentSessionId });
+        await update(ref(db, `users/doctors/${oldDocId}`), { busy: false, activeSessionId: null }).catch(()=>{});
+        
+        // Refresh WebRTC
+        await remove(ref(db, `sessions/${currentSessionId}/webrtc`)); // Clear old WebRTC data
+        stopVideoCall();
+        
+        showToast(`Reassigned to Dr. ${newDocData.name}`, 'success');
+        setText('doctor-name-display', `Dr. ${newDocData.name}`);
+        
+        // Restart failsafe for new doctor
+        startFailSafe(newDocId);
+        
+        // Restart WebRTC
+        setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1000);
+        
+    } catch (e) {
+        console.error('Reassignment failed', e);
+    }
+}
+
 function startFailSafe(docId) {
     if (failSafeTimer) clearInterval(failSafeTimer);
-    failSafeTimer = setInterval(() => {
-        if (currentSessionId) {
-            get(ref(db, `users/doctors/${docId}`)).then(snap => {
-                const d = snap.val();
+    failSafeTimer = setInterval(async () => {
+        if (currentSessionId && assignedDoctorId) {
+            try {
+                const snap = await get(ref(db, `sessions/${currentSessionId}`));
+                const session = snap.val();
+                if (!session) return;
+                
+                const isInactive = !session.lastActive || (Date.now() - session.lastActive) > 60000;
+                
                 const notice = document.getElementById('doctor-disconnect-notice');
-                if (notice) notice.classList.toggle('hidden', !!(d && (Date.now() - (d.lastActiveTime||0)) < 30000));
-            });
+                if (notice) notice.classList.toggle('hidden', !isInactive);
+                
+                if (isInactive) {
+                    await reassignDoctor();
+                }
+            } catch(e) {}
         }
     }, 15000);
 }
