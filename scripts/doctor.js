@@ -109,6 +109,7 @@ function monitorSessions(uid) {
 }
 
 window.openConsultation = function(sid) {
+    console.log("Consultation opened:", sid);
     if (currentSessionId !== sid) {
         currentSessionId = sid;
     }
