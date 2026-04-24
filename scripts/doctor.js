@@ -1,7 +1,7 @@
 // Doctor Panel - Full Working
 import { db, auth, storage } from './firebase.js';
 import { checkAuth, login, logout } from './auth.js';
-import { ref, set, push, onValue, update, get, onDisconnect, off, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { ref, set, push, onValue, update, get, onDisconnect, off, query, orderByChild, equalTo, remove, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 let currentDoctor = null, currentDoctorData = null;
 let currentSessionId = null, currentPatientId = null;
@@ -232,11 +232,13 @@ async function setupWebRTC(sid, role) {
     const placeholder = document.getElementById('video-placeholder');
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (localVideo) localVideo.srcObject = localStream;
+        if (localVideo) { localVideo.srcObject = localStream; localVideo.muted = true; }
         pc = new RTCPeerConnection(servers);
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
+        
+        let candidateQueue = [];
         onValue(sessionRef, async snap => {
             const data = snap.val();
             if (!pc.currentRemoteDescription && data?.offer) {
@@ -244,11 +246,18 @@ async function setupWebRTC(sid, role) {
                 const ans = await pc.createAnswer();
                 await pc.setLocalDescription(ans);
                 await update(sessionRef, { answer: { sdp: ans.sdp, type: ans.type } });
+                
+                candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
+                candidateQueue = [];
             }
         });
         pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/doctorCandidates`)), e.candidate.toJSON()); };
-        onValue(ref(db, `sessions/${sid}/webrtc/patientCandidates`), snap => {
-            snap.forEach(child => { const d = child.val(); if (d) pc.addIceCandidate(new RTCIceCandidate(d)).catch(() => {}); });
+        onChildAdded(ref(db, `sessions/${sid}/webrtc/patientCandidates`), snap => {
+            const d = snap.val();
+            if (d) {
+                if (pc.remoteDescription) pc.addIceCandidate(new RTCIceCandidate(d)).catch(()=>{});
+                else candidateQueue.push(d);
+            }
         });
         setupVideoControls();
     } catch (err) {
@@ -273,6 +282,8 @@ function setupVideoControls() {
 function stopVideoCall() {
     localStream?.getTracks().forEach(t => t.stop()); localStream = null;
     pc?.close(); pc = null;
+    const rv = document.getElementById('remote-video'); if (rv) rv.srcObject = null;
+    const lv = document.getElementById('local-video'); if (lv) lv.srcObject = null;
 }
 
 // Chat
@@ -300,8 +311,11 @@ document.getElementById('confirm-end-btn')?.addEventListener('click', async () =
     const btn = document.getElementById('confirm-end-btn');
     btn.disabled = true; btn.textContent = 'Saving...';
     try {
-        await update(ref(db, `sessions/${currentSessionId}`), { prescription, endTime: Date.now(), status: 'COMPLETED' });
+        const sidToClose = currentSessionId; // Preserve ID before clearing
+        await update(ref(db, `sessions/${sidToClose}`), { prescription, endTime: Date.now(), status: 'COMPLETED' });
         await update(ref(db, `users/doctors/${currentDoctor.uid}`), { busy: false, activeSessionId: null });
+        await remove(ref(db, `sessions/${sidToClose}/webrtc`)); // Cleanup WebRTC signaling data
+        
         document.getElementById('prescription-text').value = '';
         document.getElementById('prescription-modal')?.classList.add('hidden');
         stopVideoCall();

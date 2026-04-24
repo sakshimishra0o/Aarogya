@@ -1,7 +1,7 @@
 // Patient Panel - Full Working
 import { db, auth, storage } from './firebase.js';
 import { checkAuth, login, logout, registerPatient } from './auth.js';
-import { ref, set, onValue, update, get, push, remove, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { ref, set, onValue, update, get, push, remove, query, orderByChild, equalTo, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 let currentPatient = null, currentSessionId = null, assignedDoctorId = null, failSafeTimer = null;
@@ -130,7 +130,10 @@ document.getElementById('profile-form')?.addEventListener('submit', async e => {
 });
 
 // Consultation
-document.getElementById('quick-consult-btn')?.addEventListener('click', () => document.getElementById('consult-modal')?.classList.remove('hidden'));
+document.getElementById('quick-consult-btn')?.addEventListener('click', (e) => {
+    if (currentSessionId) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    document.getElementById('consult-modal')?.classList.remove('hidden');
+});
 document.getElementById('cancel-consult')?.addEventListener('click', () => document.getElementById('consult-modal')?.classList.add('hidden'));
 
 document.getElementById('confirm-consult')?.addEventListener('click', async () => {
@@ -176,12 +179,16 @@ async function startSession(docId, docName, symptoms) {
     setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1200);
 }
 
+let sessionListenerRef = null, chatListenerRef = null;
 function showConsultation(docName) {
     const area = document.getElementById('consultation-area');
     if (area) area.classList.remove('hidden');
     setText('doctor-name-display', `Dr. ${docName}`);
     const chatBox = document.getElementById('chat-messages');
-    onValue(ref(db, `sessions/${currentSessionId}/chat`), snap => {
+    
+    if (chatListenerRef) off(chatListenerRef);
+    chatListenerRef = ref(db, `sessions/${currentSessionId}/chat`);
+    onValue(chatListenerRef, snap => {
         if (!chatBox) return;
         chatBox.innerHTML = '';
         Object.values(snap.val() || {}).forEach(m => {
@@ -192,19 +199,31 @@ function showConsultation(docName) {
         });
         chatBox.scrollTop = chatBox.scrollHeight;
     });
-    onValue(ref(db, `sessions/${currentSessionId}`), snap => {
+    
+    if (sessionListenerRef) off(sessionListenerRef);
+    sessionListenerRef = ref(db, `sessions/${currentSessionId}`);
+    onValue(sessionListenerRef, snap => {
         const session = snap.val();
-        if (session?.endTime) {
+        if (session && (session.endTime || session.status === 'COMPLETED')) {
+            off(sessionListenerRef); off(chatListenerRef);
+            sessionListenerRef = null; chatListenerRef = null;
+            
             stopFailSafe(); stopVideoCall();
             const rx = session.prescription;
             if (rx) {
                 setText('rx-doctor', `Dr. ${docName}`);
-                setText('rx-date', new Date(session.endTime).toLocaleDateString());
+                setText('rx-date', new Date(session.endTime || Date.now()).toLocaleDateString());
                 setText('prescription-content', rx);
                 document.getElementById('prescription-modal')?.classList.remove('hidden');
             }
             document.getElementById('consultation-area')?.classList.add('hidden');
-            currentSessionId = null;
+            currentSessionId = null; assignedDoctorId = null;
+            
+            const btn = document.getElementById('quick-consult-btn');
+            if (btn) {
+                btn.innerHTML = '<i data-lucide="stethoscope" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Consult Doctor Now'; 
+                btn.style.background = ''; btn.onclick = null; lucide.createIcons();
+            }
             showToast('Consultation ended. Check your prescription!', 'success');
         }
     });
@@ -220,7 +239,7 @@ async function setupWebRTC(sid, role) {
     const placeholder = document.getElementById('video-placeholder');
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (localVideo) localVideo.srcObject = localStream;
+        if (localVideo) { localVideo.srcObject = localStream; localVideo.muted = true; }
         pc = new RTCPeerConnection(servers);
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
@@ -228,14 +247,24 @@ async function setupWebRTC(sid, role) {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         await update(sessionRef, { offer: { sdp: offer.sdp, type: offer.type } });
+        
+        let candidateQueue = [];
         onValue(sessionRef, snap => {
             const data = snap.val();
-            if (!pc.currentRemoteDescription && data?.answer)
-                pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(() => {});
+            if (!pc.currentRemoteDescription && data?.answer) {
+                pc.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
+                    candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
+                    candidateQueue = [];
+                }).catch(() => {});
+            }
         });
         pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/patientCandidates`)), e.candidate.toJSON()); };
-        onValue(ref(db, `sessions/${sid}/webrtc/doctorCandidates`), snap => {
-            snap.forEach(child => { const d = child.val(); if (d) pc.addIceCandidate(new RTCIceCandidate(d)).catch(() => {}); });
+        onChildAdded(ref(db, `sessions/${sid}/webrtc/doctorCandidates`), snap => {
+            const d = snap.val();
+            if (d) {
+                if (pc.remoteDescription) pc.addIceCandidate(new RTCIceCandidate(d)).catch(() => {});
+                else candidateQueue.push(d);
+            }
         });
         setupVideoControls();
     } catch (err) {
@@ -255,7 +284,12 @@ function setupVideoControls() {
         t.enabled = !t.enabled; this.classList.toggle('off', !t.enabled);
     });
 }
-function stopVideoCall() { localStream?.getTracks().forEach(t => t.stop()); localStream = null; pc?.close(); pc = null; }
+function stopVideoCall() { 
+    localStream?.getTracks().forEach(t => t.stop()); localStream = null; 
+    pc?.close(); pc = null; 
+    const rv = document.getElementById('remote-video'); if (rv) rv.srcObject = null;
+    const lv = document.getElementById('local-video'); if (lv) lv.srcObject = null;
+}
 
 // Chat
 const chatSend = async () => {
@@ -348,10 +382,10 @@ function loadPatientHistory(patientId) {
     onValue(q, snap => {
         const all = snap.val() || {};
         const active = Object.entries(all).find(([sid,s]) => s.status === 'ACTIVE' && !s.endTime);
+        const btn = document.getElementById('quick-consult-btn');
         if (active) {
             const [sid, session] = active;
             currentSessionId = sid; assignedDoctorId = session.doctorId;
-            const btn = document.getElementById('quick-consult-btn');
             if (btn) {
                 btn.innerHTML = '<i data-lucide="play" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Resume Consultation';
                 lucide.createIcons();
@@ -359,10 +393,9 @@ function loadPatientHistory(patientId) {
                 btn.onclick = e => { e.stopImmediatePropagation(); showConsultation(session.doctorName); startFailSafe(session.doctorId); setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1200); };
             }
         } else {
-            const btn = document.getElementById('quick-consult-btn');
             if (btn) { btn.innerHTML = '<i data-lucide="stethoscope" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Consult Doctor Now'; btn.style.background = ''; btn.onclick = null; lucide.createIcons(); }
         }
-        const done = Object.entries(all).filter(([,s]) => s.endTime).sort((a,b) => b[1].endTime - a[1].endTime);
+        const done = Object.entries(all).filter(([,s]) => s.endTime || s.status === 'COMPLETED').sort((a,b) => (b[1].endTime || 0) - (a[1].endTime || 0));
         renderHistory('patient-history-list', done.slice(0,3));
         renderHistory('full-history-list', done);
     });

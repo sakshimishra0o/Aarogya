@@ -12,7 +12,13 @@
       "doctors": {
         ".read": "auth != null",
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid"
+          ".write": "auth != null && auth.uid === $uid",
+          "busy": {
+            ".write": "auth != null"
+          },
+          "activeSessionId": {
+            ".write": "auth != null"
+          }
         }
       },
       "patients": {
@@ -24,6 +30,7 @@
     },
     "sessions": {
       ".read": "auth != null",
+      ".indexOn": ["patientId", "doctorId"],
       "$sessionId": {
         ".write": "auth != null"
       }
