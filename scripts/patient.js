@@ -130,9 +130,18 @@ document.getElementById('profile-form')?.addEventListener('submit', async e => {
 });
 
 // Consultation
-document.getElementById('quick-consult-btn')?.addEventListener('click', (e) => {
-    if (currentSessionId) { e.preventDefault(); e.stopImmediatePropagation(); return; }
-    document.getElementById('consult-modal')?.classList.remove('hidden');
+document.getElementById('quick-consult-btn')?.addEventListener('click', async (e) => {
+    if (currentSessionId && window.activeSessionData) {
+        e.preventDefault();
+        const session = window.activeSessionData;
+        stopVideoCall();
+        await remove(ref(db, `sessions/${currentSessionId}/webrtc`)); // Force connection cleanup before resume
+        showConsultation(session.doctorName); 
+        startFailSafe(session.doctorId); 
+        setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1200);
+    } else {
+        document.getElementById('consult-modal')?.classList.remove('hidden');
+    }
 });
 document.getElementById('cancel-consult')?.addEventListener('click', () => document.getElementById('consult-modal')?.classList.add('hidden'));
 
@@ -393,21 +402,15 @@ function loadPatientHistory(patientId) {
         if (active) {
             const [sid, session] = active;
             currentSessionId = sid; assignedDoctorId = session.doctorId;
+            window.activeSessionData = session;
             if (btn) {
                 btn.innerHTML = '<i data-lucide="play" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Resume Consultation';
                 lucide.createIcons();
                 btn.style.background = '#f59e0b';
-                btn.onclick = async e => { 
-                    e.stopImmediatePropagation(); 
-                    stopVideoCall();
-                    await remove(ref(db, `sessions/${currentSessionId}/webrtc`)); // Force connection cleanup before resume
-                    showConsultation(session.doctorName); 
-                    startFailSafe(session.doctorId); 
-                    setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1200); 
-                };
             }
         } else {
-            if (btn) { btn.innerHTML = '<i data-lucide="stethoscope" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Consult Doctor Now'; btn.style.background = ''; btn.onclick = null; lucide.createIcons(); }
+            window.activeSessionData = null;
+            if (btn) { btn.innerHTML = '<i data-lucide="stethoscope" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Consult Doctor Now'; btn.style.background = ''; lucide.createIcons(); }
         }
         const done = Object.entries(all).filter(([,s]) => s.status === 'ended').sort((a,b) => (b[1].endTime || 0) - (a[1].endTime || 0));
         renderHistory('patient-history-list', done.slice(0,3));
