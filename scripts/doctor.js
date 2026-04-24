@@ -90,7 +90,7 @@ function monitorSessions(uid) {
         if (data?.activeSessionId && data.activeSessionId !== currentSessionId) {
             const sSnap = await get(ref(db, `sessions/${data.activeSessionId}`));
             const session = sSnap.val();
-            if (session && session.status === 'ACTIVE' && !session.endTime) {
+            if (session && session.status === 'active') {
                 currentSessionId = data.activeSessionId;
                 showNotification(`New Patient: ${session.patientName || 'Patient'}\nSymptoms: ${session.symptoms || 'N/A'}`);
                 showConsultation(currentSessionId);
@@ -119,6 +119,11 @@ function showConsultation(sid) {
     let patientLoaded = false;
     onValue(sessionListener, snap => {
         const session = snap.val(); if (!session) return;
+        console.log("Doctor session status:", session.status);
+        if (session.status === 'ended') {
+            hideConsultation();
+            return;
+        }
         currentPatientId = session.patientId;
 
         // Patient name + emergency flag
@@ -236,22 +241,30 @@ async function setupWebRTC(sid, role) {
         pc = new RTCPeerConnection(servers);
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
+        
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
+        await remove(sessionRef); // Clear old signaling data to force clean connection
+        
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await update(sessionRef, { offer: { sdp: offer.sdp, type: offer.type } });
         
         let candidateQueue = [];
-        onValue(sessionRef, async snap => {
+        onValue(sessionRef, snap => {
             const data = snap.val();
-            if (!pc.currentRemoteDescription && data?.offer) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const ans = await pc.createAnswer();
-                await pc.setLocalDescription(ans);
-                await update(sessionRef, { answer: { sdp: ans.sdp, type: ans.type } });
-                
-                candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
-                candidateQueue = [];
+            if (!data && pc && pc.signalingState !== 'closed' && pc.currentLocalDescription) {
+                stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'doctor'), 1000); return;
+            }
+            if (data?.answer && !pc.currentRemoteDescription) {
+                pc.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
+                    candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
+                    candidateQueue = [];
+                }).catch(() => {});
             }
         });
+        
         pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/doctorCandidates`)), e.candidate.toJSON()); };
+        
         onChildAdded(ref(db, `sessions/${sid}/webrtc/patientCandidates`), snap => {
             const d = snap.val();
             if (d) {
@@ -280,8 +293,8 @@ function setupVideoControls() {
 }
 
 function stopVideoCall() {
-    localStream?.getTracks().forEach(t => t.stop()); localStream = null;
-    pc?.close(); pc = null;
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    if (pc) { pc.close(); pc = null; }
     const rv = document.getElementById('remote-video'); if (rv) rv.srcObject = null;
     const lv = document.getElementById('local-video'); if (lv) lv.srcObject = null;
 }
@@ -312,9 +325,10 @@ document.getElementById('confirm-end-btn')?.addEventListener('click', async () =
     btn.disabled = true; btn.textContent = 'Saving...';
     try {
         const sidToClose = currentSessionId; // Preserve ID before clearing
-        await update(ref(db, `sessions/${sidToClose}`), { prescription, endTime: Date.now(), status: 'COMPLETED' });
+        await update(ref(db, `sessions/${sidToClose}`), { prescription, endTime: Date.now(), status: 'ended' });
         await update(ref(db, `users/doctors/${currentDoctor.uid}`), { busy: false, activeSessionId: null });
         await remove(ref(db, `sessions/${sidToClose}/webrtc`)); // Cleanup WebRTC signaling data
+        console.log("Updated session status to 'ended':", sidToClose);
         
         document.getElementById('prescription-text').value = '';
         document.getElementById('prescription-modal')?.classList.add('hidden');
@@ -352,7 +366,7 @@ function renderHistoryTable(id, sessions) {
             <td>${s.symptoms?.substring(0,40) || '--'}${(s.symptoms?.length||0)>40?'…':''}</td>
             <td style="font-size:0.82rem">${s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '-'}</td>
             <td>${formatDur(s.startTime, s.endTime)}</td>
-            <td><span class="status-indicator ${s.endTime ? 'status-offline' : 'status-active'}">${s.endTime ? '✓ Done' : '⏺ Active'}</span></td>
+            <td><span class="status-indicator ${s.status === 'ended' ? 'status-offline' : 'status-active'}">${s.status === 'ended' ? '✓ Done' : '⏺ Active'}</span></td>
         </tr>
     `).join('');
     lucide.createIcons();

@@ -171,7 +171,7 @@ async function startSession(docId, docName, symptoms) {
         patientId: currentPatient.uid,
         patientName: patData.name || 'Patient',
         doctorId: docId, doctorName: docName,
-        symptoms, startTime: Date.now(), status: 'ACTIVE'
+        symptoms, startTime: Date.now(), status: 'active'
     });
     await update(ref(db, `users/doctors/${docId}`), { busy: true, activeSessionId: currentSessionId });
     showConsultation(docName);
@@ -204,7 +204,8 @@ function showConsultation(docName) {
     sessionListenerRef = ref(db, `sessions/${currentSessionId}`);
     onValue(sessionListenerRef, snap => {
         const session = snap.val();
-        if (session && (session.endTime || session.status === 'COMPLETED')) {
+        if (session && session.status === 'ended') {
+            console.log("Patient session status:", session.status);
             off(sessionListenerRef); off(chatListenerRef);
             sessionListenerRef = null; chatListenerRef = null;
             
@@ -243,22 +244,28 @@ async function setupWebRTC(sid, role) {
         pc = new RTCPeerConnection(servers);
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
+        
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        await update(sessionRef, { offer: { sdp: offer.sdp, type: offer.type } });
         
         let candidateQueue = [];
-        onValue(sessionRef, snap => {
+        onValue(sessionRef, async snap => {
             const data = snap.val();
-            if (!pc.currentRemoteDescription && data?.answer) {
-                pc.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
-                    candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
-                    candidateQueue = [];
-                }).catch(() => {});
+            if (!data && pc && pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
+                stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'patient'), 1000); return;
+            }
+            if (data?.offer && !pc.currentRemoteDescription) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const ans = await pc.createAnswer();
+                await pc.setLocalDescription(ans);
+                await update(sessionRef, { answer: { sdp: ans.sdp, type: ans.type } });
+                
+                candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
+                candidateQueue = [];
             }
         });
+        
         pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/patientCandidates`)), e.candidate.toJSON()); };
+        
         onChildAdded(ref(db, `sessions/${sid}/webrtc/doctorCandidates`), snap => {
             const d = snap.val();
             if (d) {
@@ -285,8 +292,8 @@ function setupVideoControls() {
     });
 }
 function stopVideoCall() { 
-    localStream?.getTracks().forEach(t => t.stop()); localStream = null; 
-    pc?.close(); pc = null; 
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    if (pc) { pc.close(); pc = null; }
     const rv = document.getElementById('remote-video'); if (rv) rv.srcObject = null;
     const lv = document.getElementById('local-video'); if (lv) lv.srcObject = null;
 }
@@ -381,7 +388,7 @@ function loadPatientHistory(patientId) {
     const q = query(ref(db, 'sessions'), orderByChild('patientId'), equalTo(patientId));
     onValue(q, snap => {
         const all = snap.val() || {};
-        const active = Object.entries(all).find(([sid,s]) => s.status === 'ACTIVE' && !s.endTime);
+        const active = Object.entries(all).find(([sid,s]) => s.status === 'active');
         const btn = document.getElementById('quick-consult-btn');
         if (active) {
             const [sid, session] = active;
@@ -390,12 +397,19 @@ function loadPatientHistory(patientId) {
                 btn.innerHTML = '<i data-lucide="play" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Resume Consultation';
                 lucide.createIcons();
                 btn.style.background = '#f59e0b';
-                btn.onclick = e => { e.stopImmediatePropagation(); showConsultation(session.doctorName); startFailSafe(session.doctorId); setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1200); };
+                btn.onclick = async e => { 
+                    e.stopImmediatePropagation(); 
+                    stopVideoCall();
+                    await remove(ref(db, `sessions/${currentSessionId}/webrtc`)); // Force connection cleanup before resume
+                    showConsultation(session.doctorName); 
+                    startFailSafe(session.doctorId); 
+                    setTimeout(() => setupWebRTC(currentSessionId, 'patient'), 1200); 
+                };
             }
         } else {
             if (btn) { btn.innerHTML = '<i data-lucide="stethoscope" style="width:16px;height:16px;margin-right:8px;display:inline;"></i> Consult Doctor Now'; btn.style.background = ''; btn.onclick = null; lucide.createIcons(); }
         }
-        const done = Object.entries(all).filter(([,s]) => s.endTime || s.status === 'COMPLETED').sort((a,b) => (b[1].endTime || 0) - (a[1].endTime || 0));
+        const done = Object.entries(all).filter(([,s]) => s.status === 'ended').sort((a,b) => (b[1].endTime || 0) - (a[1].endTime || 0));
         renderHistory('patient-history-list', done.slice(0,3));
         renderHistory('full-history-list', done);
     });
