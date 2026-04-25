@@ -335,12 +335,7 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     to { transform: translateY(0); }
 }
 
-/* ===== TABLE RESPONSIVENESS & FLEXIBLE LAYOUTS ===== */
-img, video {
-    max-width: 100%;
-    height: auto;
-}
-
+/* ===== CONSULTATION ROWS ===== */
 .consult-row {
     display: grid;
     grid-template-columns: 1.5fr 2fr 1fr 1fr 1fr;
@@ -350,22 +345,16 @@ img, video {
     align-items: center;
 }
 
-.admin-consult-row {
+.consult-row-admin {
+    display: grid;
     grid-template-columns: 1fr 1.5fr 1.5fr 1fr 1fr 1.5fr;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    align-items: center;
 }
 
-/* Ensure components don't overflow */
-.card, .stat-card, .vital-box {
-    width: 100%;
-    max-width: 100%;
-}
-
-@media (max-width: 1024px) {
-    .consultation-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-
+/* ===== TABLE RESPONSIVENESS ===== */
 div[style*="overflow"] {
     -webkit-overflow-scrolling: touch;
     width: 100%;
@@ -443,20 +432,7 @@ th, td {
         padding-bottom: 80px !important; /* space for bottom nav */
     }
     
-    .consultation-grid { 
-        display: flex !important; 
-        flex-direction: column !important; 
-        width: 100% !important; 
-        gap: 1.5rem !important;
-    }
-    
-    .card, .stat-card, .vital-box {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin-bottom: 12px !important;
-        box-sizing: border-box !important;
-    }
-    
+    .consultation-grid { grid-template-columns: 1fr; }
     .auth-card { padding: 1.5rem; }
     #menu-toggle { display: none !important; }
     
@@ -467,93 +443,14 @@ th, td {
         font-size: 1.1rem !important;
     }
     
-    /* Force inline form grids and structural containers to single column */
-    div[style*="grid-template-columns"],
-    form[style*="grid-template-columns"],
-    .stats-row, .vitals-display, .stats-grid, .dashboard-grid, .container {
-        display: flex !important;
-        flex-direction: column !important;
-        width: 100% !important;
-        gap: 1rem !important;
-    }
-    
-    .modal-content {
-        padding: 1.25rem !important;
-    }
-    
-    .consult-row, .admin-consult-row {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 0.5rem !important;
-        padding: 0.75rem !important;
-    }
-    
-    .btn {
-        min-height: 48px;
-        padding: 0.75rem 1rem;
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
-
-    .video-feed-container {
-        min-height: auto !important;
-        aspect-ratio: 16/9;
-        border-radius: 10px;
-        width: 100% !important;
-    }
-    
-    .remote-video {
-        height: 100% !important;
-        width: 100% !important;
-        object-fit: cover;
-    }
-    
-    .local-video {
-        width: 100px !important;
-        height: 75px !important;
-        bottom: 0.5rem !important;
-        right: 0.5rem !important;
-    }
-    
-    .page-body {
-        padding: 1rem !important;
-        width: 100%;
-        overflow-x: hidden;
-    }
-    
-    html, body {
-        overflow-x: hidden;
-    }
-
-    /* Prevent text overflow and adjust sizes */
-    h1, h2, h3, p, span, div {
-        overflow-wrap: break-word;
-        word-wrap: break-word;
-        hyphens: auto;
-    }
-    
-    h3 { font-size: 1.05rem !important; }
-    p { font-size: 0.9rem !important; }
-
     /* Hide non-essential columns on mobile */
     .hide-mobile {
         display: none !important;
     }
-}
-
-@media (max-width: 480px) {
-    .top-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
     
-    .auth-card {
-        padding: 1.5rem;
-    }
-    
-    .input-group label {
-        font-size: 0.9rem;
+    .consult-row, .consult-row-admin {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+        text-align: left;
     }
 }

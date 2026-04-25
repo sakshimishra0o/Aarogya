@@ -6,17 +6,7 @@ import { ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://
 
 let currentPatient = null, currentSessionId = null, assignedDoctorId = null, failSafeTimer = null;
 let pc = null, localStream = null;
-const servers = { 
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-        }
-    ], 
-    iceCandidatePoolSize: 10 
-};
+const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302'] }], iceCandidatePoolSize: 10 };
 
 const views = {
     dashboard: document.getElementById('dashboard-view'),
@@ -262,17 +252,13 @@ async function setupWebRTC(sid, role) {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         if (localVideo) { localVideo.srcObject = localStream; localVideo.muted = true; }
         pc = new RTCPeerConnection(servers);
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         
-        localStream.getTracks().forEach(track => {
-            pc.addTrack(track, localStream);
-        });
-        
-        pc.ontrack = (event) => { 
-            console.log("ontrack fired", event.streams[0]);
+        pc.ontrack = e => { 
+            console.log("ontrack triggered! Track kind:", e.track.kind);
+            console.log("Stream received:", e.streams[0]);
             if (remoteVideo) { 
-                remoteVideo.srcObject = event.streams[0]; 
-                remoteVideo.autoplay = true;
-                remoteVideo.muted = false;
+                remoteVideo.srcObject = e.streams[0]; 
                 const placeholder = document.getElementById('video-placeholder');
                 if (placeholder) placeholder.classList.add('hidden'); 
             } 
@@ -282,7 +268,6 @@ async function setupWebRTC(sid, role) {
         await remove(sessionRef); // Clear old signaling data to force clean connection
         
         const offer = await pc.createOffer();
-        console.log("offer created");
         await pc.setLocalDescription(offer);
         await update(sessionRef, { offer: { sdp: offer.sdp, type: offer.type } });
         
@@ -293,18 +278,13 @@ async function setupWebRTC(sid, role) {
                 stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'patient'), 1000); return;
             }
             if (data?.answer && !pc.remoteDescription) {
-                console.log("answer received");
                 await pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(err => console.error("Patient signaling error:", err));
                 candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
                 candidateQueue = [];
             }
         });
         
-        pc.onicecandidate = (event) => { 
-            if (event.candidate) {
-                set(push(ref(db, `sessions/${sid}/webrtc/patientCandidates`)), event.candidate.toJSON()); 
-            }
-        };
+        pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/patientCandidates`)), e.candidate.toJSON()); };
         
         onChildAdded(ref(db, `sessions/${sid}/webrtc/doctorCandidates`), snap => {
             const d = snap.val();

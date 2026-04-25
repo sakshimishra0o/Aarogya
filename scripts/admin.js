@@ -335,7 +335,7 @@ function renderSessions(sessions, listId, recentOnly) {
             </tr>`;
         } else {
             html += `
-            <div class="consult-row admin-consult-row">
+            <div class="consult-row-admin">
                 <div style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">${sid.substring(0, 10)}…</div>
                 <div><strong>${esc(s.patientName || 'Patient')}</strong></div>
                 <div>${esc(s.doctorName  || 'Doctor')}</div>
