@@ -90,12 +90,16 @@ function monitorSessions(uid) {
         const all = snap.val() || {};
         let activeSessionId = null;
         let activeSession = null;
-        for (const [sid, session] of Object.entries(all)) {
-            if (session.status === 'active') {
-                activeSessionId = sid;
-                activeSession = session;
-                break;
-            }
+        const activeSessions = Object.entries(all).filter(([,s]) => s.status === 'active');
+        activeSessions.sort((a, b) => {
+            if (a[1].emergency && !b[1].emergency) return -1;
+            if (!a[1].emergency && b[1].emergency) return 1;
+            return (b[1].startTime || 0) - (a[1].startTime || 0);
+        });
+
+        if (activeSessions.length > 0) {
+            activeSessionId = activeSessions[0][0];
+            activeSession = activeSessions[0][1];
         }
         
         if (activeSessionId && activeSessionId !== currentSessionId) {
@@ -367,7 +371,11 @@ function loadHistory(uid) {
     const q = query(ref(db, 'sessions'), orderByChild('doctorId'), equalTo(uid));
     onValue(q, snap => {
         const all = snap.val() || {};
-        const sessions = Object.entries(all).sort((a, b) => (b[1].startTime || 0) - (a[1].startTime || 0));
+        const sessions = Object.entries(all).sort((a, b) => {
+            if (a[1].emergency && !b[1].emergency) return -1;
+            if (!a[1].emergency && b[1].emergency) return 1;
+            return (b[1].startTime || 0) - (a[1].startTime || 0);
+        });
         const today = new Date().setHours(0,0,0,0);
 
         document.getElementById('stat-patients').textContent = sessions.length;
@@ -384,7 +392,7 @@ function renderHistoryTable(id, sessions) {
     if (!sessions.length) { el.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem">No consultations yet.</td></tr>`; return; }
     el.innerHTML = sessions.map(([sid, s]) => `
         <tr>
-            <td><strong>${s.patientName || 'Patient'}</strong>${s.emergency ? ' <span style="color:#ef4444"><i data-lucide="alert-triangle" style="width:12px;height:12px;display:inline;margin-left:4px;"></i></span>' : ''}</td>
+            <td><strong>${s.patientName || 'Patient'}</strong>${s.emergency ? ' <span style="color:#ef4444; font-weight:700; font-size:0.75rem; margin-left:8px; background:#fee2e2; padding:2px 6px; border-radius:4px;"><i data-lucide="alert-triangle" style="width:12px;height:12px;display:inline;margin-right:4px;"></i>EMERGENCY</span>' : ''}</td>
             <td>${s.symptoms?.substring(0,40) || '--'}${(s.symptoms?.length||0)>40?'…':''}</td>
             <td style="font-size:0.82rem">${s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '-'}</td>
             <td>${formatDur(s.startTime, s.endTime)}</td>

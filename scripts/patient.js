@@ -323,7 +323,7 @@ document.getElementById('chat-input')?.addEventListener('keypress', e => { if (e
 // Emergency
 window.flagEmergency = async () => {
     if (!currentSessionId) return;
-    await update(ref(db, `sessions/${currentSessionId}`), { emergency: true });
+    await update(ref(db, `sessions/${currentSessionId}`), { emergency: true, priority: 'high' });
     showToast('<i data-lucide="alert-triangle" style="width:16px;height:16px;display:inline;margin-right:8px;vertical-align:middle;"></i> Emergency flagged! Doctor has been notified.', 'warning');
 };
 
