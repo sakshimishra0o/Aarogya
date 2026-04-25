@@ -413,7 +413,7 @@ function loadHistory(uid) {
                 let html = '';
                 sessions.forEach(([sid, s]) => {
                     html += `
-                    <div class="consult-row" style="display:grid; grid-template-columns:1.5fr 2fr 1fr 1fr 1fr; gap:1rem; padding:1rem; border-bottom:1px solid #f1f5f9; align-items:center;">
+                    <div class="consult-row">
                         <div><strong>${s.patientName || 'Patient'}</strong>${s.emergency ? ' <span style="color:#ef4444; font-weight:700; font-size:0.75rem; margin-left:8px; background:#fee2e2; padding:2px 6px; border-radius:4px;"><i data-lucide="alert-triangle" style="width:12px;height:12px;display:inline;margin-right:4px;"></i>EMERGENCY</span>' : ''}</div>
                         <div style="color:var(--text-muted); font-size:0.9rem;">${s.symptoms?.substring(0,40) || '--'}${(s.symptoms?.length||0)>40?'…':''}</div>
                         <div style="font-size:0.85rem">${s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '-'}</div>
