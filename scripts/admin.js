@@ -282,6 +282,11 @@ function renderSessions(sessions, listId, recentOnly) {
     const total  = Object.keys(sessions).length;
     let active   = 0, emergency = 0;
 
+    Object.values(sessions).forEach(s => {
+        if (!s.endTime) active++;
+        if (s.emergency) emergency++;
+    });
+
     if (listId === 'session-list') {
         const elTotal = document.getElementById('stat-total');
         if (elTotal) elTotal.textContent = total;
@@ -292,8 +297,15 @@ function renderSessions(sessions, listId, recentOnly) {
 
     const entries = recentOnly ? sorted.slice(0, 10) : sorted;
 
+    list.innerHTML = ''; // Clear container before render
+
     if (!entries.length) {
-        list.innerHTML = `<tr><td colspan="6" class="empty-td">No sessions recorded yet.</td></tr>`;
+        if (listId === 'session-list') {
+            list.innerHTML = `<tr><td colspan="6" class="empty-td" style="text-align:center; padding:2rem; color:var(--text-muted);">No sessions recorded yet.</td></tr>`;
+        } else {
+            list.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:2rem">No sessions recorded yet.</p>';
+        }
+        
         if (listId === 'session-list') {
             const elActive = document.getElementById('stat-active');
             if (elActive) elActive.textContent = 0;
@@ -303,24 +315,41 @@ function renderSessions(sessions, listId, recentOnly) {
         return;
     }
 
-    list.innerHTML = entries.map(([sid, s]) => {
-        if (!s.endTime)  active++;
-        if (s.emergency) emergency++;
+    let html = '';
+    entries.forEach(([sid, s]) => {
         const isLive = !s.endTime;
         const dur    = formatDur(s.startTime, s.endTime);
         const date   = s.startTime ? new Date(s.startTime).toLocaleDateString('en-IN') : '-';
-        return `<tr>
-            <td style="font-family:monospace;font-size:0.78rem">${sid.substring(0, 10)}…</td>
-            <td>${esc(s.patientName || 'Patient')}</td>
-            <td>${esc(s.doctorName  || 'Doctor')}</td>
-            <td>${date}</td>
-            <td>${dur}</td>
-            <td>
-                ${s.emergency ? '<span class="badge-emergency"><i data-lucide="alert-triangle" style="width:10px;height:10px;"></i> EMRG</span> ' : ''}
-                <span class="status-indicator ${isLive ? 'status-active' : 'status-offline'}">${isLive ? 'LIVE' : 'Done'}</span>
-            </td>
-        </tr>`;
-    }).join('');
+        
+        if (listId === 'session-list') {
+            html += `<tr>
+                <td style="font-family:monospace;font-size:0.78rem">${sid.substring(0, 10)}…</td>
+                <td>${esc(s.patientName || 'Patient')}</td>
+                <td>${esc(s.doctorName  || 'Doctor')}</td>
+                <td>${date}</td>
+                <td>${dur}</td>
+                <td>
+                    ${s.emergency ? '<span style="color:#ef4444; font-weight:700; font-size:0.75rem; margin-right:8px; background:#fee2e2; padding:2px 6px; border-radius:4px;"><i data-lucide="alert-triangle" style="width:10px;height:10px;display:inline;margin-right:2px;"></i>EMRG</span> ' : ''}
+                    <span class="status-indicator ${isLive ? 'status-active' : 'status-offline'}">${isLive ? 'LIVE' : 'Done'}</span>
+                </td>
+            </tr>`;
+        } else {
+            html += `
+            <div class="consult-row" style="display:grid; grid-template-columns:1fr 1.5fr 1.5fr 1fr 1fr 1.5fr; gap:1rem; padding:1rem; border-bottom:1px solid #f1f5f9; align-items:center;">
+                <div style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">${sid.substring(0, 10)}…</div>
+                <div><strong>${esc(s.patientName || 'Patient')}</strong></div>
+                <div>${esc(s.doctorName  || 'Doctor')}</div>
+                <div style="font-size:0.85rem">${date}</div>
+                <div style="font-size:0.85rem">${dur}</div>
+                <div>
+                    ${s.emergency ? '<span style="color:#ef4444; font-weight:700; font-size:0.75rem; margin-right:8px; background:#fee2e2; padding:2px 6px; border-radius:4px;"><i data-lucide="alert-triangle" style="width:10px;height:10px;display:inline;margin-right:2px;"></i>EMRG</span>' : ''}
+                    <span class="status-indicator ${isLive ? 'status-active' : 'status-offline'}">${isLive ? 'LIVE' : 'Done'}</span>
+                </div>
+            </div>`;
+        }
+    });
+    
+    list.innerHTML = html;
     lucide.createIcons();
 
     if (listId === 'session-list') {
