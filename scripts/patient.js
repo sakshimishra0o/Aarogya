@@ -6,7 +6,15 @@ import { ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://
 
 let currentPatient = null, currentSessionId = null, assignedDoctorId = null, failSafeTimer = null;
 let pc = null, localStream = null;
-const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302'] }], iceCandidatePoolSize: 10 };
+const servers = {
+    iceServers: [
+        { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ],
+    iceCandidatePoolSize: 10
+};
 
 const views = {
     dashboard: document.getElementById('dashboard-view'),
@@ -248,55 +256,109 @@ async function setupWebRTC(sid, role) {
     const localVideo = document.getElementById('local-video');
     const remoteVideo = document.getElementById('remote-video');
     const placeholder = document.getElementById('video-placeholder');
+    if (placeholder) { placeholder.classList.remove('hidden'); placeholder.innerHTML = '<p style="color:white;padding:1rem">📡 Connecting to doctor...</p>'; }
     try {
+        // 1. Get local media
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         if (localVideo) { localVideo.srcObject = localStream; localVideo.muted = true; }
+        console.log('[Patient WebRTC] Local stream acquired');
+
+        // 2. Create peer connection with STUN + TURN servers
         pc = new RTCPeerConnection(servers);
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-        
-        pc.ontrack = e => { 
-            console.log("ontrack triggered! Track kind:", e.track.kind);
-            console.log("Stream received:", e.streams[0]);
-            if (remoteVideo) { 
-                remoteVideo.srcObject = e.streams[0]; 
-                const placeholder = document.getElementById('video-placeholder');
-                if (placeholder) placeholder.classList.add('hidden'); 
-            } 
+        console.log('[Patient WebRTC] Tracks added to peer connection');
+
+        // 3. Remote track handler
+        pc.ontrack = e => {
+            console.log('[Patient WebRTC] ontrack fired! kind:', e.track.kind, 'streams:', e.streams.length);
+            if (remoteVideo && e.streams[0]) {
+                remoteVideo.srcObject = e.streams[0];
+                remoteVideo.play().catch(() => {});
+                if (placeholder) placeholder.classList.add('hidden');
+                console.log('[Patient WebRTC] Remote video attached');
+            }
         };
-        
+
+        // 4. Connection state monitoring
+        pc.onconnectionstatechange = () => {
+            console.log('[Patient WebRTC] Connection state:', pc.connectionState);
+            if (pc.connectionState === 'connected') {
+                if (placeholder) placeholder.classList.add('hidden');
+            } else if (pc.connectionState === 'failed') {
+                console.warn('[Patient WebRTC] Connection failed, attempting ICE restart');
+                if (placeholder) { placeholder.classList.remove('hidden'); placeholder.innerHTML = '<p style="color:#fbbf24;padding:1rem">🔄 Reconnecting...</p>'; }
+                pc.restartIce();
+            } else if (pc.connectionState === 'disconnected') {
+                if (placeholder) { placeholder.classList.remove('hidden'); placeholder.innerHTML = '<p style="color:#fbbf24;padding:1rem">⚠️ Connection lost, reconnecting...</p>'; }
+            }
+        };
+
+        pc.oniceconnectionstatechange = () => {
+            console.log('[Patient WebRTC] ICE state:', pc.iceConnectionState);
+        };
+
+        // 5. Clear old signaling data, then create offer
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
-        await remove(sessionRef); // Clear old signaling data to force clean connection
-        
+        await remove(sessionRef);
+        console.log('[Patient WebRTC] Cleared old signaling data');
+
+        // 6. ICE candidate sending
+        pc.onicecandidate = e => {
+            if (e.candidate) {
+                console.log('[Patient WebRTC] Sending ICE candidate');
+                set(push(ref(db, `sessions/${sid}/webrtc/patientCandidates`)), e.candidate.toJSON());
+            }
+        };
+
+        // 7. Create and send offer
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         await update(sessionRef, { offer: { sdp: offer.sdp, type: offer.type } });
-        
+        console.log('[Patient WebRTC] Offer created and sent to Firebase');
+
+        // 8. Listen for doctor's answer
         let candidateQueue = [];
+        let hasSetRemote = false;
         onValue(sessionRef, async snap => {
             const data = snap.val();
-            if (!data && pc && pc.signalingState !== 'closed' && pc.currentLocalDescription) {
-                stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'patient'), 1000); return;
-            }
-            if (data?.answer && !pc.remoteDescription) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(err => console.error("Patient signaling error:", err));
-                candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
-                candidateQueue = [];
+            if (!data || !pc || pc.signalingState === 'closed') return;
+
+            if (data.answer && !hasSetRemote) {
+                hasSetRemote = true;
+                console.log('[Patient WebRTC] Received answer from doctor');
+                try {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    console.log('[Patient WebRTC] Remote description set');
+
+                    // Flush queued candidates
+                    console.log('[Patient WebRTC] Flushing', candidateQueue.length, 'queued candidates');
+                    for (const c of candidateQueue) {
+                        await pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+                    }
+                    candidateQueue = [];
+                } catch (err) {
+                    console.error('[Patient WebRTC] Signaling error:', err);
+                    hasSetRemote = false;
+                }
             }
         });
-        
-        pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/patientCandidates`)), e.candidate.toJSON()); };
-        
+
+        // 9. Listen for doctor's ICE candidates
         onChildAdded(ref(db, `sessions/${sid}/webrtc/doctorCandidates`), snap => {
             const d = snap.val();
-            if (d) {
-                if (pc.remoteDescription) pc.addIceCandidate(new RTCIceCandidate(d)).catch(() => {});
-                else candidateQueue.push(d);
+            if (!d || !pc || pc.signalingState === 'closed') return;
+            if (pc.remoteDescription) {
+                pc.addIceCandidate(new RTCIceCandidate(d)).catch(() => {});
+            } else {
+                candidateQueue.push(d);
             }
         });
+
         setupVideoControls();
+        console.log('[Patient WebRTC] Setup complete, waiting for doctor answer...');
     } catch (err) {
-        console.error('WebRTC:', err);
-        if (placeholder) placeholder.innerHTML = '<p style="color:#ef4444;padding:1rem">📷 Camera access denied</p>';
+        console.error('[Patient WebRTC] Setup failed:', err);
+        if (placeholder) placeholder.innerHTML = '<p style="color:#ef4444;padding:1rem">📷 Camera access denied or unavailable</p>';
     }
 }
 function setupVideoControls() {
