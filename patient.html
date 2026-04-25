@@ -190,25 +190,17 @@
             </div>
         </header>
         <div class="page-body consult-body" style="max-width:1200px; margin:0 auto;">
-            <div>
-                <div class="card">
-                    <h3><i data-lucide="activity" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Vital Signs</h3>
-                    <form id="vitals-form" class="vitals-grid-form vitals-container">
-                        <div class="input-group vital-card" style="margin-bottom:0;"><label>BP</label><input type="text" id="v-bp"></div>
-                        <div class="input-group vital-card" style="margin-bottom:0;"><label>Temp</label><input type="text" id="v-temp"></div>
-                        <div class="input-group vital-card" style="margin-bottom:0;"><label>Sugar</label><input type="text" id="v-sugar"></div>
-                        <div class="input-group vital-card" style="margin-bottom:0;"><label>Pulse</label><input type="text" id="v-pulse"></div>
-                    </form>
-                </div>
-                <div class="card">
-                    <h3><i data-lucide="message-square" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Chat</h3>
-                    <div id="chat-messages" class="chat-box"></div>
-                    <div style="display:flex; gap:0.5rem;">
-                        <input type="text" id="chat-input" placeholder="Message doctor...">
-                        <button id="send-btn" class="btn btn-primary">Send</button>
-                    </div>
-                </div>
+            <!-- 1. Vitals -->
+            <div class="card">
+                <h3><i data-lucide="activity" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Vital Signs</h3>
+                <form id="vitals-form" class="vitals-grid-form vitals-container">
+                    <div class="input-group vital-card" style="margin-bottom:0;"><label>BP</label><input type="text" id="v-bp"></div>
+                    <div class="input-group vital-card" style="margin-bottom:0;"><label>Temp</label><input type="text" id="v-temp"></div>
+                    <div class="input-group vital-card" style="margin-bottom:0;"><label>Sugar</label><input type="text" id="v-sugar"></div>
+                    <div class="input-group vital-card" style="margin-bottom:0;"><label>Pulse</label><input type="text" id="v-pulse"></div>
+                </form>
             </div>
+            <!-- 2. Video -->
             <div>
                 <div class="video-feed-container">
                     <video id="remote-video" autoplay playsinline class="remote-video"></video>
@@ -220,6 +212,15 @@
                     <button onclick="flagEmergency()" class="btn btn-danger" style="display:flex; align-items:center; gap:0.5rem; border-radius:999px; padding:0 1.5rem;"><i data-lucide="alert-triangle" style="width:18px;height:18px;"></i> Flag Emergency</button>
                 </div>
                 <div id="doctor-disconnect-notice" class="notice hidden" style="background:#fee2e2; color:#991b1b; margin-top:1.5rem;"><i data-lucide="alert-triangle" style="width:16px;height:16px;display:inline;margin-right:8px;"></i> Doctor disconnected.</div>
+            </div>
+            <!-- 3. Chat -->
+            <div class="card">
+                <h3><i data-lucide="message-square" style="width:18px;height:18px;display:inline;margin-right:8px;vertical-align:text-bottom;"></i> Chat</h3>
+                <div id="chat-messages" class="chat-box"></div>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" id="chat-input" placeholder="Message doctor...">
+                    <button id="send-btn" class="btn btn-primary">Send</button>
+                </div>
             </div>
         </div>
     </div>

@@ -179,12 +179,16 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     gap: 1.5rem;
 }
 
-/* Consultation body: video + chat column */
+/* Consultation body: vitals full-width, video + chat side-by-side */
 .consult-body {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
     align-items: start;
+}
+
+.consult-body > :first-child {
+    grid-column: 1 / -1;
 }
 
 .vital-box {
@@ -450,13 +454,26 @@ th, td {
         padding-bottom: 80px !important; /* space for bottom nav */
     }
     
-    .consultation-grid { grid-template-columns: 1fr; }
+    /* Mobile: stack Patient/Vitals above Video/Chat vertically */
+    .consultation-grid {
+        grid-template-columns: 1fr !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
 
-    /* Mobile: stack vitals → video → chat vertically */
+    .consultation-grid > * {
+        width: 100% !important;
+    }
+
     .consult-body {
         display: flex !important;
         flex-direction: column !important;
         gap: 1rem !important;
+    }
+
+    .consult-body > * {
+        width: 100% !important;
     }
     .auth-card { padding: 1.5rem; }
     #menu-toggle { display: none !important; }
