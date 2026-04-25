@@ -265,7 +265,15 @@ async function setupWebRTC(sid, role) {
         if (localVideo) { localVideo.srcObject = localStream; localVideo.muted = true; }
         pc = new RTCPeerConnection(servers);
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-        pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
+        
+        pc.ontrack = e => { 
+            console.log("ontrack triggered! Track kind:", e.track.kind);
+            console.log("Stream received:", e.streams[0]);
+            if (remoteVideo) { 
+                remoteVideo.srcObject = e.streams[0]; 
+                if (placeholder) placeholder.classList.add('hidden'); 
+            } 
+        };
         
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
         
@@ -275,7 +283,7 @@ async function setupWebRTC(sid, role) {
             if (!data && pc && pc.signalingState !== 'closed' && pc.currentRemoteDescription) {
                 stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'doctor'), 1000); return;
             }
-            if (data?.offer && !pc.currentRemoteDescription) {
+            if (data?.offer && !pc.remoteDescription) {
                 pc.setRemoteDescription(new RTCSessionDescription(data.offer)).then(() => {
                     return pc.createAnswer();
                 }).then(answer => {
@@ -285,7 +293,7 @@ async function setupWebRTC(sid, role) {
                 }).then(() => {
                     candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
                     candidateQueue = [];
-                }).catch(() => {});
+                }).catch((err) => { console.error("Doctor signaling error:", err); });
             }
         });
         

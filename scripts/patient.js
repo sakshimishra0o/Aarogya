@@ -253,7 +253,16 @@ async function setupWebRTC(sid, role) {
         if (localVideo) { localVideo.srcObject = localStream; localVideo.muted = true; }
         pc = new RTCPeerConnection(servers);
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-        pc.ontrack = e => { if (remoteVideo) { remoteVideo.srcObject = e.streams[0]; placeholder?.classList.add('hidden'); } };
+        
+        pc.ontrack = e => { 
+            console.log("ontrack triggered! Track kind:", e.track.kind);
+            console.log("Stream received:", e.streams[0]);
+            if (remoteVideo) { 
+                remoteVideo.srcObject = e.streams[0]; 
+                const placeholder = document.getElementById('video-placeholder');
+                if (placeholder) placeholder.classList.add('hidden'); 
+            } 
+        };
         
         const sessionRef = ref(db, `sessions/${sid}/webrtc`);
         await remove(sessionRef); // Clear old signaling data to force clean connection
@@ -268,8 +277,8 @@ async function setupWebRTC(sid, role) {
             if (!data && pc && pc.signalingState !== 'closed' && pc.currentLocalDescription) {
                 stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'patient'), 1000); return;
             }
-            if (data?.answer && !pc.currentRemoteDescription) {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            if (data?.answer && !pc.remoteDescription) {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(err => console.error("Patient signaling error:", err));
                 candidateQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}));
                 candidateQueue = [];
             }
