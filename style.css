@@ -443,7 +443,20 @@ th, td {
         padding-bottom: 80px !important; /* space for bottom nav */
     }
     
-    .consultation-grid { grid-template-columns: 1fr; }
+    .consultation-grid { 
+        display: flex !important; 
+        flex-direction: column !important; 
+        width: 100% !important; 
+        gap: 1.5rem !important;
+    }
+    
+    .card, .stat-card, .vital-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 12px !important;
+        box-sizing: border-box !important;
+    }
+    
     .auth-card { padding: 1.5rem; }
     #menu-toggle { display: none !important; }
     
@@ -454,13 +467,18 @@ th, td {
         font-size: 1.1rem !important;
     }
     
-    /* Force inline form grids to single column */
+    /* Force inline form grids and structural containers to single column */
     div[style*="grid-template-columns"],
-    form[style*="grid-template-columns"] {
-        grid-template-columns: 1fr !important;
+    form[style*="grid-template-columns"],
+    .stats-row, .vitals-display, .stats-grid, .dashboard-grid, .container {
         display: flex !important;
         flex-direction: column !important;
         width: 100% !important;
+        gap: 1rem !important;
+    }
+    
+    .modal-content {
+        padding: 1.25rem !important;
     }
     
     .consult-row, .admin-consult-row {
@@ -469,13 +487,6 @@ th, td {
         align-items: flex-start !important;
         gap: 0.5rem !important;
         padding: 0.75rem !important;
-    }
-    
-    .stats-row, .vitals-display, .stats-grid, .dashboard-grid {
-        grid-template-columns: 1fr !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 1rem !important;
     }
     
     .btn {
@@ -514,6 +525,16 @@ th, td {
     html, body {
         overflow-x: hidden;
     }
+
+    /* Prevent text overflow and adjust sizes */
+    h1, h2, h3, p, span, div {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    h3 { font-size: 1.05rem !important; }
+    p { font-size: 0.9rem !important; }
 
     /* Hide non-essential columns on mobile */
     .hide-mobile {
