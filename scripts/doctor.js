@@ -264,13 +264,18 @@ async function setupWebRTC(sid, role) {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         if (localVideo) { localVideo.srcObject = localStream; localVideo.muted = true; }
         pc = new RTCPeerConnection(servers);
-        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         
-        pc.ontrack = e => { 
-            console.log("ontrack triggered! Track kind:", e.track.kind);
-            console.log("Stream received:", e.streams[0]);
+        localStream.getTracks().forEach(track => {
+            pc.addTrack(track, localStream);
+        });
+        
+        pc.ontrack = (event) => { 
+            console.log("ontrack fired", event.streams[0]);
             if (remoteVideo) { 
-                remoteVideo.srcObject = e.streams[0]; 
+                remoteVideo.srcObject = event.streams[0]; 
+                remoteVideo.autoplay = true;
+                remoteVideo.muted = false;
+                const placeholder = document.getElementById('video-placeholder');
                 if (placeholder) placeholder.classList.add('hidden'); 
             } 
         };
@@ -284,9 +289,11 @@ async function setupWebRTC(sid, role) {
                 stopVideoCall(); setTimeout(() => setupWebRTC(sid, 'doctor'), 1000); return;
             }
             if (data?.offer && !pc.remoteDescription) {
+                console.log("offer received");
                 pc.setRemoteDescription(new RTCSessionDescription(data.offer)).then(() => {
                     return pc.createAnswer();
                 }).then(answer => {
+                    console.log("answer created");
                     return pc.setLocalDescription(answer).then(() => {
                         return update(sessionRef, { answer: { sdp: answer.sdp, type: answer.type } });
                     });
@@ -297,7 +304,11 @@ async function setupWebRTC(sid, role) {
             }
         });
         
-        pc.onicecandidate = e => { if (e.candidate) set(push(ref(db, `sessions/${sid}/webrtc/doctorCandidates`)), e.candidate.toJSON()); };
+        pc.onicecandidate = (event) => { 
+            if (event.candidate) {
+                set(push(ref(db, `sessions/${sid}/webrtc/doctorCandidates`)), event.candidate.toJSON()); 
+            }
+        };
         
         onChildAdded(ref(db, `sessions/${sid}/webrtc/patientCandidates`), snap => {
             const d = snap.val();
