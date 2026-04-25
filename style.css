@@ -179,6 +179,14 @@ input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px
     gap: 1.5rem;
 }
 
+/* Consultation body: video + chat column */
+.consult-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
 .vital-box {
     background: var(--primary-light);
     padding: 1.25rem;
@@ -443,6 +451,13 @@ th, td {
     }
     
     .consultation-grid { grid-template-columns: 1fr; }
+
+    /* Mobile: stack vitals → video → chat vertically */
+    .consult-body {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
     .auth-card { padding: 1.5rem; }
     #menu-toggle { display: none !important; }
     
